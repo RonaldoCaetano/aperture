@@ -24,7 +24,9 @@ pub fn run() {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
     let beads_dir = format!("{}/.aperture/.beads", home);
     let current_path = std::env::var("PATH").unwrap_or_default();
-    let path_env = format!("/opt/homebrew/bin:/usr/local/bin:{}", current_path);
+    let go_bin = format!("{}/go/bin", home);
+    let path_env = format!("/opt/homebrew/bin:/usr/local/bin:{}:{}", go_bin, current_path);
+    let bd_bin = format!("{}/go/bin/bd", home);
 
     // Ensure dolt is initialized in .beads dir
     if !std::path::Path::new(&format!("{}/config.json", beads_dir)).exists() {
@@ -37,7 +39,7 @@ pub fn run() {
     }
 
     // Start dolt sql-server if not already running
-    let dolt_test = std::process::Command::new("bd")
+    let dolt_test = std::process::Command::new(&bd_bin)
         .args(["dolt", "test"])
         .env("BEADS_DIR", &beads_dir)
         .env("PATH", &path_env)
@@ -61,7 +63,7 @@ pub fn run() {
 
     // Initialize BEADS if not yet done
     {
-        let mut cmd = std::process::Command::new("bd");
+        let mut cmd = std::process::Command::new(&bd_bin);
         cmd.args(["init", "--quiet"]);
         cmd.env("BEADS_DIR", &beads_dir);
         cmd.env("PATH", &path_env);
@@ -105,6 +107,7 @@ pub fn run() {
             agents::start_agent,
             agents::stop_agent,
             agents::list_agents,
+            agents::update_agent_model,
             agents::get_recent_messages,
             agents::clear_message_history,
             agents::clear_conversation_history,

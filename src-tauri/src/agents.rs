@@ -1,3 +1,4 @@
+use crate::config;
 use crate::state::AppState;
 use crate::tmux;
 use std::fs;
@@ -284,6 +285,31 @@ pub fn get_chat_messages() -> Result<serde_json::Value, String> {
         .collect();
 
     Ok(serde_json::json!(recent))
+}
+
+#[tauri::command]
+pub fn update_agent_model(
+    name: String,
+    model: String,
+    state: tauri::State<'_, Arc<Mutex<AppState>>>,
+) -> Result<(), String> {
+    const VALID_MODELS: &[&str] = &["opus", "sonnet", "haiku"];
+    if !VALID_MODELS.contains(&model.as_str()) {
+        return Err(format!("Invalid model '{}'. Must be one of: opus, sonnet, haiku", model));
+    }
+
+    let mut app_state = state.lock().map_err(|e| e.to_string())?;
+    let agent = app_state
+        .agents
+        .get_mut(&name)
+        .ok_or(format!("Agent '{}' not found", name))?;
+
+    agent.model = model.clone();
+
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+    config::save_agent_override(&home, &name, &model);
+
+    Ok(())
 }
 
 #[tauri::command]

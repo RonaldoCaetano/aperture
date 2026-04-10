@@ -1,5 +1,6 @@
 import type { AgentDef } from "../types";
 import { commands } from "../services/tauri-commands";
+import type { AgentConfigModal } from "./AgentConfigModal";
 
 const AGENT_THEME: Record<string, { icon: string; color: string }> = {
   planner:   { icon: "📋", color: "#e67e22" },  // orange   — director
@@ -19,7 +20,7 @@ const AGENT_THEME: Record<string, { icon: string; color: string }> = {
 
 const DEFAULT_THEME = { icon: "⚙️", color: "#f39c12" };
 
-export function createAgentCard(agent: AgentDef, onUpdate: () => void): HTMLElement {
+export function createAgentCard(agent: AgentDef, modal: AgentConfigModal, onUpdate: () => void): HTMLElement {
   const card = document.createElement("div");
   const theme = AGENT_THEME[agent.name] ?? DEFAULT_THEME;
   render();
@@ -32,6 +33,7 @@ export function createAgentCard(agent: AgentDef, onUpdate: () => void): HTMLElem
       <span class="agent-mini__icon">${theme.icon}</span>
       <span class="agent-mini__name">${agent.name}</span>
       <span class="agent-mini__model">${agent.model}</span>
+      <button class="agent-mini__config" title="Configure">⚙</button>
       <button class="agent-mini__toggle" title="${isRunning ? "Stop" : "Start"}">
         ${isRunning ? "■" : "▶"}
       </button>
@@ -44,6 +46,11 @@ export function createAgentCard(agent: AgentDef, onUpdate: () => void): HTMLElem
           detail: { name: agent.name, color: theme.color }
         }));
       }
+    });
+
+    card.querySelector(".agent-mini__config")!.addEventListener("click", (e) => {
+      e.stopPropagation();
+      modal.open(agent);
     });
 
     card.querySelector(".agent-mini__toggle")!.addEventListener("click", async (e) => {
