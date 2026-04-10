@@ -248,6 +248,173 @@ html, body {
   opacity: 0.8;
 }
 
+.agent-mini__config {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  padding: 0;
+  margin-right: 2px;
+}
+
+.agent-mini:hover .agent-mini__config {
+  opacity: 1;
+}
+
+.agent-mini__config:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Agent Config Modal ── */
+.agent-config-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-config-modal--visible {
+  display: flex;
+}
+
+.agent-config-modal__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 320px;
+  overflow: hidden;
+}
+
+.agent-config-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-config-modal__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.agent-config-modal__close {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.agent-config-modal__close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.agent-config-modal__body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-config-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.agent-config-modal__label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.agent-config-modal__agent-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.agent-config-modal__agent-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.agent-config-modal__select {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: monospace;
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
+}
+
+.agent-config-modal__select:focus {
+  border-color: var(--accent-blue);
+}
+
+.agent-config-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.agent-config-modal__status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.agent-config-modal__save {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.agent-config-modal__save:hover {
+  opacity: 0.85;
+}
+
+.agent-config-modal__save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ── Terminal ── */
 #terminal-container {
   flex: 1;
