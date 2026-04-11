@@ -153,6 +153,14 @@ pub fn tmux_rename_window(target: String, new_name: String) -> Result<(), String
     }
 }
 
+pub fn tmux_capture_pane(window_id: &str) -> Result<String, String> {
+    let output = cmd("tmux")
+        .args(["capture-pane", "-t", window_id, "-p"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 #[tauri::command]
 pub fn tmux_send_keys(target: String, keys: String) -> Result<(), String> {
     // Special keys like C-c should not be quoted or followed by Enter

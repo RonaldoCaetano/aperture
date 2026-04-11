@@ -8,22 +8,32 @@ use crate::state::AgentDef;
 
 #[tauri::command]
 pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
-    let mut app_state = state.lock().map_err(|e| e.to_string())?;
-    let agent = app_state
-        .agents
-        .get(&name)
-        .ok_or(format!("Agent '{}' not found", name))?
-        .clone();
+    // Extract all needed data while holding the lock briefly, then release it
+    // before doing any expensive I/O (subprocess calls, file writes). This
+    // prevents the global state mutex from blocking list_agents polling and
+    // other commands for the full duration of agent startup.
+    let (agent, tmux_session, mcp_server_path, project_dir) = {
+        let app_state = state.lock().map_err(|e| e.to_string())?;
+        let agent = app_state
+            .agents
+            .get(&name)
+            .ok_or(format!("Agent '{}' not found", name))?
+            .clone();
 
-    if agent.status == "running" {
-        return Err(format!("Agent '{}' is already running", name));
-    }
+        if agent.status == "running" {
+            return Err(format!("Agent '{}' is already running", name));
+        }
+
+        (
+            agent,
+            app_state.tmux_session.clone(),
+            app_state.mcp_server_path.clone(),
+            app_state.project_dir.clone(),
+        )
+    }; // ← mutex released here; all I/O below is lock-free
 
     // Create a dedicated tmux window for this agent
-    let window_id = tmux::tmux_create_window(
-        app_state.tmux_session.clone(),
-        name.clone(),
-    )?;
+    let window_id = tmux::tmux_create_window(tmux_session, name.clone())?;
 
     // Ensure agent's mailbox directory exists
     let mailbox_dir = format!("{}/.aperture/mailbox", std::env::var("HOME").unwrap_or_else(|_| "/tmp".into()));
@@ -34,7 +44,7 @@ pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) 
             "aperture-bus": {
                 "type": "stdio",
                 "command": "node",
-                "args": [&app_state.mcp_server_path],
+                "args": [&mcp_server_path],
                 "env": {
                     "AGENT_NAME": &name,
                     "AGENT_ROLE": &agent.role,
@@ -78,8 +88,8 @@ env = {{ AGENT_NAME = "{name}", AGENT_ROLE = "{role}", AGENT_MODEL = "{model}", 
 "#,
             bare_model = bare_model,
             prompt_dest = prompt_dest,
-            project_dir = app_state.project_dir,
-            mcp_server_path = app_state.mcp_server_path,
+            project_dir = project_dir,
+            mcp_server_path = mcp_server_path,
             name = name,
             role = agent.role,
             model = agent.model,
@@ -124,46 +134,76 @@ exec claude --dangerously-skip-permissions --model {} --system-prompt "$PROMPT" 
 
     tmux::tmux_send_keys(window_id.clone(), launcher_path)?;
 
-    // Auto-confirm the workspace trust prompt
+    // Auto-confirm the workspace trust prompt — but ONLY when the dialog is
+    // actually visible. Sending Enter blindly at fixed intervals would stomp
+    // on whatever the user is typing in the terminal (the agent window is
+    // focused right after creation). Instead, poll pane content every 500ms
+    // and send Enter exactly once when the trust prompt appears.
     let window_id_clone = window_id.clone();
     std::thread::spawn(move || {
-        for _ in 0..3 {
-            std::thread::sleep(std::time::Duration::from_secs(2));
-            let _ = tmux::tmux_send_keys(window_id_clone.clone(), "".into());
+        // Max 30 polls × 500ms = 15 seconds total timeout
+        for _ in 0..30 {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            if let Ok(content) = tmux::tmux_capture_pane(&window_id_clone) {
+                // Match the actual Claude workspace trust dialog text
+                if content.contains("Do you trust the files")
+                    || content.contains("Trust workspace")
+                    || content.contains("trust the files in")
+                {
+                    let _ = tmux::tmux_send_keys(window_id_clone.clone(), "".into());
+                    break; // sent exactly once — done
+                }
+                // Claude is already past the trust step — stop polling
+                if content.contains("> ") || content.contains("claude>") || content.contains("✓") {
+                    break;
+                }
+            }
         }
     });
 
-    let agent_mut = app_state.agents.get_mut(&name).unwrap();
-    agent_mut.tmux_window_id = Some(window_id);
-    agent_mut.status = "running".into();
+    // Re-acquire lock only to write the final status
+    {
+        let mut app_state = state.lock().map_err(|e| e.to_string())?;
+        let agent_mut = app_state.agents.get_mut(&name).unwrap();
+        agent_mut.tmux_window_id = Some(window_id);
+        agent_mut.status = "running".into();
+    }
 
     Ok(())
 }
 
 #[tauri::command]
 pub fn stop_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
-    let mut app_state = state.lock().map_err(|e| e.to_string())?;
-    let agent = app_state
-        .agents
-        .get(&name)
-        .ok_or(format!("Agent '{}' not found", name))?
-        .clone();
+    // Extract needed data and release the lock before the blocking sleep calls
+    let (window_id_opt, is_running) = {
+        let app_state = state.lock().map_err(|e| e.to_string())?;
+        let agent = app_state
+            .agents
+            .get(&name)
+            .ok_or(format!("Agent '{}' not found", name))?;
 
-    if agent.status != "running" {
+        (agent.tmux_window_id.clone(), agent.status == "running")
+    }; // ← mutex released here
+
+    if !is_running {
         return Err(format!("Agent '{}' is not running", name));
     }
 
-    if let Some(ref window_id) = agent.tmux_window_id {
+    if let Some(window_id) = window_id_opt {
         let _ = tmux::tmux_send_keys(window_id.clone(), "C-c".into());
         std::thread::sleep(std::time::Duration::from_millis(500));
         let _ = tmux::tmux_send_keys(window_id.clone(), "/exit".into());
         std::thread::sleep(std::time::Duration::from_millis(500));
-        let _ = tmux::tmux_kill_window(window_id.clone());
+        let _ = tmux::tmux_kill_window(window_id);
     }
 
-    let agent_mut = app_state.agents.get_mut(&name).unwrap();
-    agent_mut.tmux_window_id = None;
-    agent_mut.status = "stopped".into();
+    // Re-acquire to update status
+    {
+        let mut app_state = state.lock().map_err(|e| e.to_string())?;
+        let agent_mut = app_state.agents.get_mut(&name).unwrap();
+        agent_mut.tmux_window_id = None;
+        agent_mut.status = "stopped".into();
+    }
 
     Ok(())
 }
