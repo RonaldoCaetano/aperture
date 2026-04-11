@@ -9,7 +9,7 @@ export async function createTerminal(container: HTMLElement, sessionName: string
     cursorBlink: true,
     fontSize: 14,
     scrollback: 10000,
-    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+    fontFamily: "'MesloLGS NF', monospace",
     theme: {
       background: "#1a1a2e",
       foreground: "#e0e0e0",
