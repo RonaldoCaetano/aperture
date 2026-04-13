@@ -69,6 +69,7 @@ pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) 
         // Copy prompt into codex_home so the path is always correct.
         let prompt_content = fs::read_to_string(&agent.prompt_file)
             .map_err(|e| format!("Failed to read prompt file '{}': {}", agent.prompt_file, e))?;
+        let prompt_content = inject_skills(prompt_content, &project_dir);
         let prompt_dest = format!("{}/prompt.md", codex_home);
         fs::write(&prompt_dest, &prompt_content).map_err(|e| e.to_string())?;
 
@@ -410,4 +411,33 @@ pub fn clear_chat_history() -> Result<(), String> {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
     let chat_log = format!("{}/.aperture/chat-log.jsonl", home);
     fs::write(&chat_log, "").map_err(|e| e.to_string())
+}
+
+pub fn inject_skills(mut prompt: String, project_dir: &str) -> String {
+    let skills_dir = format!("{}/.claude/skills", project_dir);
+    let dir = match fs::read_dir(&skills_dir) {
+        Ok(d) => d,
+        Err(_) => return prompt,
+    };
+    for entry in dir.flatten() {
+        if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            continue;
+        }
+        let skill_name = entry.file_name().to_string_lossy().to_string();
+        let base = entry.path();
+        let skill_file = ["SKILL.md", "skill.md"]
+            .iter()
+            .map(|n| base.join(n))
+            .find(|p| p.exists());
+        match skill_file {
+            Some(path) => match fs::read_to_string(&path) {
+                Ok(content) => {
+                    prompt.push_str(&format!("\n\n---\n# Skill: {}\n\n{}", skill_name, content));
+                }
+                Err(e) => eprintln!("[aperture] warn: could not read skill '{}': {}", skill_name, e),
+            },
+            None => eprintln!("[aperture] warn: skill dir '{}' has no SKILL.md", skill_name),
+        }
+    }
+    prompt
 }
