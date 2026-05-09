@@ -27,13 +27,18 @@ export function createAgentCard(agent: AgentDef, modal: AgentConfigModal, onUpda
 
   function render() {
     const isRunning = agent.status === "running";
-    const isFocused = card.classList.contains("agent-mini--focused");
-    card.className = `agent-mini ${isRunning ? "agent-mini--running" : ""} ${isFocused ? "agent-mini--focused" : ""}`;
+    const wantsAttention = agent.attention === true;
+    card.className = [
+      "agent-mini",
+      isRunning ? "agent-mini--running" : "",
+      wantsAttention ? "agent-mini--attention" : "",
+    ].filter(Boolean).join(" ");
     card.dataset.agentName = agent.name;
     card.style.setProperty("--agent-color", theme.color);
     card.innerHTML = `
       <span class="agent-mini__icon">${theme.icon}</span>
       <span class="agent-mini__name">${agent.name}</span>
+      ${wantsAttention ? `<span class="agent-mini__badge" title="Agent has a message — open their tmux window to read it">●</span>` : ""}
       <span class="agent-mini__model">${agent.model}</span>
       <button class="agent-mini__config" title="Configure">⚙</button>
       <button class="agent-mini__toggle" title="${isRunning ? "Stop" : "Start"}">
@@ -42,12 +47,17 @@ export function createAgentCard(agent: AgentDef, modal: AgentConfigModal, onUpda
     `;
 
     card.addEventListener("click", async () => {
-      if (isRunning && agent.tmux_window_id) {
-        await commands.tmuxSelectWindow(agent.tmux_window_id);
-        window.dispatchEvent(new CustomEvent("agent-focused", {
-          detail: { name: agent.name, color: theme.color }
-        }));
+      // Clicking the row clears the attention badge — the operator is
+      // acknowledging they'll go look at the agent's tmux window.
+      if (wantsAttention) {
+        try { await commands.clearAttention(agent.name); } catch (_) { /* ignore */ }
       }
+      // If the agent is running, also focus its tmux window so any
+      // already-attached terminal jumps to it.
+      if (isRunning && agent.tmux_window_id) {
+        try { await commands.tmuxSelectWindow(agent.tmux_window_id); } catch (_) { /* ignore */ }
+      }
+      onUpdate();
     });
 
     card.querySelector(".agent-mini__config")!.addEventListener("click", (e) => {

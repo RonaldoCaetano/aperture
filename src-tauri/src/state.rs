@@ -9,6 +9,12 @@ pub struct AgentDef {
     pub prompt_file: String,
     pub tmux_window_id: Option<String>,
     pub status: String,
+    /// Notification badge — set when the agent calls
+    /// `send_message(to: "operator", ...)`. The operator clears it by clicking
+    /// the agent in the launcher. There is no chat panel; the agent's actual
+    /// message body lives in their tmux scrollback.
+    #[serde(default)]
+    pub attention: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +36,11 @@ pub struct AppState {
     pub agents: HashMap<String, AgentDef>,
     pub spiderlings: HashMap<String, SpiderlingDef>,
     pub mcp_server_path: String,
+    /// Vestigial — kept so we don't have to thread a removal through
+    /// `default_state`. Was used by an older message DB; today the message
+    /// log is JSONL at `~/.aperture/message-log.jsonl` and BEADS owns the
+    /// real durable store.
+    #[allow(dead_code)]
     pub db_path: String,
     pub project_dir: String,
 }

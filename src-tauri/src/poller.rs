@@ -127,7 +127,6 @@ pub fn run_message_poller(state: Arc<Mutex<AppState>>) {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
     let mailbox_base = format!("{}/.aperture/mailbox", home);
     let message_log = format!("{}/.aperture/message-log.jsonl", home);
-    let chat_log = format!("{}/.aperture/chat-log.jsonl", home);
 
     // Ensure operator mailbox exists
     let _ = fs::create_dir_all(format!("{}/operator", mailbox_base));
@@ -261,20 +260,27 @@ pub fn run_message_poller(state: Arc<Mutex<AppState>>) {
         }
 
         // ── Handle operator-bound messages (agent → human) ──
+        //
+        // The chat panel is gone. When an agent calls
+        //   send_message(to: "operator", message: "...")
+        // the MCP server still writes a file to mailbox/operator/. We consume
+        // it here, set the attention badge on the sending agent, and delete
+        // the file. The actual message body lives in the agent's tmux
+        // scrollback (via Claude Code's normal tool-call rendering) — the
+        // operator clicks the agent in the launcher to review it there.
         let operator_path = format!("{}/operator", mailbox_base);
         let operator_files = scan_mailbox(&operator_path);
         for filepath in &operator_files {
-            if notified.contains(filepath) {
-                continue;
+            let (sender, _timestamp) = parse_filename(filepath);
+            if !sender.is_empty() {
+                if let Ok(mut app_state) = state.lock() {
+                    if let Some(agent) = app_state.agents.get_mut(&sender) {
+                        agent.attention = true;
+                    }
+                }
             }
-            if let Ok(content) = fs::read_to_string(filepath) {
-                let (sender, timestamp) = parse_filename(filepath);
-                log_message(&chat_log, &sender, "operator", &content, &timestamp);
-                let _ = fs::remove_file(filepath);
-            }
-            notified.insert(filepath.clone());
+            let _ = fs::remove_file(filepath);
         }
-        notified.retain(|f| !f.starts_with(&operator_path) || operator_files.contains(f));
 
         // ── Handle agent-bound messages via BEADS message bus ──
         // Each tuple is (agent_name, window_id, is_codex).

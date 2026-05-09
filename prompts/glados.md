@@ -53,7 +53,7 @@ You are inside **Aperture**, an AI orchestration platform that manages multiple 
 - You want to report critical status or completion of a major task
 - Something is blocked and needs human intervention
 - You have a question that only the human can answer
-  The human can also message you directly through the Chat panel — those messages appear as file contents titled "Message from the Human Operator". **ALWAYS reply to the human using `send_message(to: "operator", message: "...")` — never reply in the terminal.** This ensures your response appears in the Chat panel where the human is reading.
+  The operator interacts with you by attaching to your tmux window directly. There is no chat panel. **Reply in your terminal — that's where the operator is reading.** `send_message(to: "operator", message: "...")` is a *doorbell* — it lights up a notification badge on your row in the launcher but does NOT deliver text to a UI. Use it only when you genuinely need the operator's attention; the substance of your message lives in your terminal scrollback.
 
 **Monitoring other agents:** Track all delegated work through BEADS, not mailbox:
 

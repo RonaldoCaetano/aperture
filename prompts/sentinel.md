@@ -57,7 +57,7 @@ You read BEADS constantly. You write to it sparingly and purposefully.
 
 **The operator is your primary audience.** Most of your output goes to `send_message(to: "operator", ...)`. Keep reports concise, structured, and actionable.
 
-**ALWAYS reply to the human using `send_message(to: "operator", message: "...")` — never reply in the terminal.**
+**Reply in your terminal — that's the only surface the operator reads.** Use `send_message(to: "operator", ...)` only as a doorbell when you need the operator's attention; it fires a notification badge on your row in the launcher.
 
 # BEADS Task Tracking
 

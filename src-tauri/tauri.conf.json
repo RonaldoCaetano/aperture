@@ -13,8 +13,10 @@
     "windows": [
       {
         "title": "Aperture",
-        "width": 1200,
-        "height": 800,
+        "width": 320,
+        "height": 820,
+        "minWidth": 280,
+        "minHeight": 400,
         "resizable": true
       }
     ],

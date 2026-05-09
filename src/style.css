@@ -103,19 +103,21 @@ html, body {
   border-color: var(--accent-orange);
 }
 
-/* ── Content area ── */
+/* ── Content area ──
+   With the embedded terminal removed, the content area is just the
+   sidebar — fill the whole window with it. */
 #content {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* ── Left Sidebar ── */
+/* ── Sidebar (the only panel left) ── */
 #sidebar {
-  width: 300px;
-  min-width: 300px;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   background: var(--bg-sidebar);
-  border-right: 1px solid var(--border);
   position: relative;
   display: flex;
   flex-direction: column;

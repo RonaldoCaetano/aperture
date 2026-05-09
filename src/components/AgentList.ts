@@ -12,14 +12,6 @@ export function createAgentList(container: HTMLElement) {
   let isBulkToggling = false;
 
   const modal = createAgentConfigModal(() => refresh());
-  let focusedAgent: string | null = null;
-
-  window.addEventListener("agent-focused", (e) => {
-    focusedAgent = (e as CustomEvent).detail.name;
-    wrapper.querySelectorAll<HTMLElement>(".agent-mini").forEach(card => {
-      card.classList.toggle("agent-mini--focused", card.dataset.agentName === focusedAgent);
-    });
-  });
 
   async function refresh() {
     if (isBulkToggling) return;
@@ -32,8 +24,9 @@ export function createAgentList(container: HTMLElement) {
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
       });
 
-      // Build a hash of current state to detect changes (include model for config updates)
-      const hash = agents.map(a => `${a.name}:${a.status}:${a.model}`).join("|");
+      // Build a hash of current state to detect changes. Include attention so
+      // the badge appears/disappears without waiting for status/model changes.
+      const hash = agents.map(a => `${a.name}:${a.status}:${a.model}:${a.attention ? 1 : 0}`).join("|");
 
       // Only rebuild DOM if something actually changed
       if (hash !== lastAgentHash) {
@@ -78,13 +71,6 @@ export function createAgentList(container: HTMLElement) {
         agents.forEach((agent) => {
           wrapper.appendChild(createAgentCard(agent, modal, refresh));
         });
-
-        // Re-apply focused state after DOM rebuild
-        if (focusedAgent) {
-          wrapper.querySelectorAll<HTMLElement>(".agent-mini").forEach(card => {
-            card.classList.toggle("agent-mini--focused", card.dataset.agentName === focusedAgent);
-          });
-        }
       }
     } catch (e) {
       console.error("Failed to list agents:", e);

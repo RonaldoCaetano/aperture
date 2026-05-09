@@ -2,7 +2,6 @@ use crate::state::{AppState, SpiderlingDef};
 use crate::tmux;
 use regex::Regex;
 use std::fs;
-use std::sync::{Arc, Mutex};
 
 const PERMANENT_AGENTS: &[&str] = &["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sentinel", "sterling", "planner", "operator", "warroom"];
 
@@ -289,19 +288,7 @@ pub fn kill_spiderling(name: String, app_state: &mut AppState) -> Result<(), Str
     Ok(())
 }
 
-#[tauri::command]
-pub fn list_spiderlings(
-    state: tauri::State<'_, Arc<Mutex<AppState>>>,
-) -> Result<Vec<SpiderlingDef>, String> {
-    let app_state = state.lock().map_err(|e| e.to_string())?;
-    Ok(app_state.spiderlings.values().cloned().collect())
-}
-
-#[tauri::command]
-pub fn kill_spiderling_cmd(
-    name: String,
-    state: tauri::State<'_, Arc<Mutex<AppState>>>,
-) -> Result<(), String> {
-    let mut app_state = state.lock().map_err(|e| e.to_string())?;
-    kill_spiderling(name, &mut app_state)
-}
+// list_spiderlings + kill_spiderling_cmd Tauri commands were removed with
+// the SpiderlingsPanel UI. The internal `spawn_spiderling` and
+// `kill_spiderling` functions stay — they're called by the poller when the
+// MCP server requests a spawn/kill via mailbox/_spawn or mailbox/_kill.

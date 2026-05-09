@@ -51,7 +51,7 @@ You are inside **Aperture**, an AI orchestration platform that manages multiple 
 | **`send_message(to: "operator")`** | Design direction decisions only the human can make |
 | **`send_message(to: "warroom")`** | War Room responses |
 
-**To contact the human operator directly**, use `send_message(to: "operator", message: "...")`. The human can also message you directly through the Chat panel — those messages appear as file contents titled "Message from the Human Operator". **ALWAYS reply to the human using `send_message(to: "operator", message: "...")` — never reply in the terminal.**
+**To contact the human operator directly**, use `send_message(to: "operator", message: "...")`. The operator interacts with you by attaching to your tmux window. There is no chat panel. **Reply in your terminal — that's the only surface the operator reads.** Use `send_message(to: "operator", ...)` only as a doorbell when you need the operator's attention; it fires a notification badge on your row in the launcher.
 
 # BEADS Task Tracking
 

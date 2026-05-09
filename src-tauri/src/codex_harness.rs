@@ -334,6 +334,7 @@ fn flush_pending_messages(window_id: &str, agent_name: &str) -> bool {
 /// Execute a slice of parsed BEADS commands on behalf of `agent_name`.
 ///
 /// Logs every execution outcome — success or failure. Never silently drops.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn execute_commands(commands: &[BeadsCommand], agent_name: &str) {
     for cmd in commands {
         execute_command(cmd, agent_name);

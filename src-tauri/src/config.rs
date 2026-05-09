@@ -30,6 +30,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/glados.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -41,6 +42,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/wheatley.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -52,6 +54,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/peppy.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -63,6 +66,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/izzy.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -74,6 +78,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/vance.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -85,6 +90,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/rex.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -96,6 +102,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/scout.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -107,6 +114,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/cipher.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -118,6 +126,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/sage.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -129,6 +138,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/atlas.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -140,6 +150,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/sentinel.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -151,6 +162,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/sterling.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents.insert(
@@ -162,6 +174,7 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
             prompt_file: format!("{}/prompts/planner.md", project_dir),
             tmux_window_id: None,
             status: "stopped".into(),
+            attention: false,
         },
     );
     agents

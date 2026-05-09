@@ -1,3 +1,10 @@
+// War room frontend was removed with the UI cleanup. The Tauri commands
+// in this file are kept (silenced with `dead_code`) so that when the war
+// room frontend is reintroduced, the surface still exists. The internal
+// API used by the poller (`handle_warroom_message`) remains live — agents
+// can still convene war rooms over BEADS without a panel.
+#![allow(dead_code)]
+
 use crate::state::AppState;
 use crate::tmux;
 use serde::{Deserialize, Serialize};

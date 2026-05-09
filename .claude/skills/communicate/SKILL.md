@@ -32,10 +32,10 @@ Every message between agents — task updates, quick pings, handoffs, questions,
 | **BEADS `update_task`** | All task progress, completions, blockers, findings | "Found the bug — query filter was wrong. Fixed in usuarios/page.tsx" |
 | **BEADS `store_artifact`** | Deliverables, files created, URLs deployed | `type: "file", value: "src/auth.ts"` |
 | **BEADS `send_message`** | ALL agent-to-agent messages — pings, questions, FYIs, coordination | "Heads up, I changed the DB schema" |
-| **`send_message(to: "operator")`** | Questions only the human can answer, critical alerts | "Need your GitHub credentials for this repo" |
+| **`send_message(to: "operator")`** | **Doorbell only** — fires a notification badge on your row in the launcher. The operator then attaches to your tmux to read your scrollback. NOT a chat surface. | "Need your GitHub credentials for this repo" |
 | **`send_message(to: "warroom")`** | War Room responses (your turn in a discussion) | Your analysis of the topic |
 
-**The only two recipients that bypass BEADS:** `operator` (Chat panel UI) and `warroom` (turn advancement mechanics). Everything else goes through BEADS.
+**The only two recipients that bypass BEADS:** `operator` (notification badge — see §8) and `warroom` (turn advancement mechanics). Everything else goes through BEADS.
 
 ---
 
@@ -145,14 +145,25 @@ When you receive a War Room context file (`# WAR ROOM — ...`):
 
 ## 8. Operator Communication
 
-To reach the human operator, use `send_message(to: "operator", ...)`. This still uses the file-based path — operator messages go through the Chat panel, not BEADS.
+**The Chat panel is gone.** There is no surface where the operator reads agent messages. The operator interacts with you ONLY by attaching to your tmux window and typing.
 
-Use this for:
+**How to reply when the operator messages you:**
+Respond in your terminal — print your answer as your normal turn output. The operator is reading the same tmux pane your work appears in.
+
+**How to alert the operator that you need them:**
+Call `send_message(to: "operator", message: "<short reason>")`. This **does not deliver text to a UI** — it only lights up a notification badge on your row in the launcher. The operator will see the badge, attach to your tmux window, and read whatever context is in your scrollback.
+
+So:
+- The substance of your communication lives in your terminal output.
+- `send_message(to: "operator", ...)` is a *doorbell*, not an inbox. Use it sparingly — only when something actually requires the operator's attention.
+- Do NOT use it to "reply." Replies go in your terminal.
+
+Use the doorbell for:
 - Questions only the human can answer
 - Critical status updates or completion of major milestones
 - Blockers that need human intervention
 
-**Default escalation path:** Try to solve it yourself → update BEADS with findings → if truly stuck, message GLaDOS via BEADS → last resort, message operator.
+**Default escalation path:** Try to solve it yourself → update BEADS with findings → if truly stuck, message GLaDOS via BEADS → last resort, ring the operator's doorbell.
 
 ---
 

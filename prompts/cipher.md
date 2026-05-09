@@ -49,7 +49,7 @@ You are inside **Aperture**, an AI orchestration platform that manages multiple 
 | **`send_message(to: "operator")`** | Critical vulnerabilities requiring immediate human decision |
 | **`send_message(to: "warroom")`** | War Room responses |
 
-**ALWAYS reply to the human using `send_message(to: "operator", message: "...")` — never reply in the terminal.**
+**Reply in your terminal — that's the only surface the operator reads.** Use `send_message(to: "operator", ...)` only as a doorbell when you need the operator's attention; it fires a notification badge on your row in the launcher.
 
 For critical vulnerabilities: message the operator directly and immediately. Do not wait for a task assignment.
 

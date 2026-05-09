@@ -139,20 +139,6 @@ pub fn tmux_select_window(window_id: String) -> Result<(), String> {
     }
 }
 
-#[tauri::command]
-pub fn tmux_rename_window(target: String, new_name: String) -> Result<(), String> {
-    let output = cmd("tmux")
-        .args(["rename-window", "-t", &target, &new_name])
-        .output()
-        .map_err(|e| e.to_string())?;
-
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(String::from_utf8_lossy(&output.stderr).to_string())
-    }
-}
-
 pub fn tmux_capture_pane(window_id: &str) -> Result<String, String> {
     let output = cmd("tmux")
         .args(["capture-pane", "-t", window_id, "-p"])
