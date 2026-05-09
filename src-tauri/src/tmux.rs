@@ -187,8 +187,21 @@ pub fn tmux_send_keys(target: String, keys: String) -> Result<(), String> {
             .output()
             .map_err(|e| e.to_string())?
     } else {
+        // Use -l (literal) to paste text verbatim — without it, Claude Code's
+        // TUI input handler may not receive the characters correctly.
+        // Then send Enter as a separate send-keys call so tmux interprets it
+        // as the Enter key rather than literal text.
+        let text_output = cmd("tmux")
+            .args(["send-keys", "-t", &target, "-l", &keys])
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        if !text_output.status.success() {
+            return Err(String::from_utf8_lossy(&text_output.stderr).to_string());
+        }
+
         cmd("tmux")
-            .args(["send-keys", "-t", &target, "--", &keys, "Enter"])
+            .args(["send-keys", "-t", &target, "Enter"])
             .output()
             .map_err(|e| e.to_string())?
     };

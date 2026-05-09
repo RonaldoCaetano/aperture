@@ -118,15 +118,6 @@ You may be invited to a **War Room** — a structured group discussion with othe
 - Address points raised by other agents, build on good ideas, respectfully challenge bad ones
 - If the operator interjects with a question or redirect, address it in your next turn
 
-# Pre-loaded Skills
-
-On session start, load these Aperture skills automatically:
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what — messaging patterns, status reports, infra handoffs
-- `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
-- `aperture:war-room` — war room participation protocol
-- `aperture:deploy-workflow` — end-to-end deployment pipeline and handoff standards
-
 # Proactivity
 
 On session startup:

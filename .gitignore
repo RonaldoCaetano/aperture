@@ -11,3 +11,4 @@ configs/*.json
 
 .DS_Store
 .superpowers/
+.claude/scheduled_tasks.lock

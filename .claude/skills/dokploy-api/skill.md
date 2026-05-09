@@ -18,10 +18,15 @@ There are **two separate Dokploy organizations** on the same server, each with i
 TOKEN=$(python3 -c "import json; print(json.load(open('/home/ubuntu/.config/@dokploy/cli/config.json'))['token'])")
 ```
 
-### Incluir Org (Main App, Infra, Waha)
+### Incluir Org (Main App, Infra, Waha) — PROD CUSTOMER-FACING
 ```bash
-TOKEN="lZMOoQglUNzSTzYMtUBtOPHQsRridBcOefVZDjDSEQtZGpBjtkugbjVjJXQqTJBH"
+# Source of truth: peppy/secrets drawer in mempalace.
+# The token rotates; never inline it here.
+# Look it up via: mcp__mempalace__mempalace_search query="dokploy api tokens"
+TOKEN="<from peppy/secrets drawer>"
 ```
+
+(The token `lZMOoQgl...` previously documented inline here is rotated/dead — do NOT use.)
 
 Pass the appropriate token as: `-H "x-api-key: $TOKEN"`
 
@@ -240,12 +245,28 @@ The app container name matches the service key in `docker-compose.yml`. The DB c
 | Secretaria Test | `zg6mgJNJlOaYggUXWy95m` |
 
 ### Incluir Org
-| Service | Compose ID |
-|---------|-----------|
-| Main Apps (Prod) | `4sHHtg1XwERiDc6o2labm` |
-| Minio | `biqK8MbgAXtrJH24k5zTg` |
-| Unleash | `27vJsrYScdmCcKf1qVh6Y` |
-| Waha | `uIBU4__1Jw3RGp6WSzz6y` |
+
+**⚠️ Source of truth is `peppy/secrets` drawer in mempalace.** This table is a snapshot — verify before deploying. composeIds can drift in Dokploy when projects are renamed/recreated.
+
+| Status | Service | Compose ID | appName | Branch |
+|--------|---------|-----------|---------|--------|
+| 🟢 ACTIVE | **Main Apps (Prod) — hono+frontend** | `_A6rI-GEm9oF8ysIojm0O` | `compose-override-solid-state-port-349ude` | `main` |
+| 🟢 ACTIVE | Observability (Loki + Tempo + Grafana) | `bPiJP-GUPhNbIsOEN_HmW` | `incluir-observability-9nbdjh` | `main` |
+| 🟢 ACTIVE | Minio | `biqK8MbgAXtrJH24k5zTg` | `infra-minio-6b6568` | — |
+| 🟢 ACTIVE | Unleash | `27vJsrYScdmCcKf1qVh6Y` | `infra-unleash-xthfr8` | — |
+| 🟢 ACTIVE | Waha | `uIBU4__1Jw3RGp6WSzz6y` | `waha-app-8fj6ue` | `master` |
+| 🛑 STOPPED 2026-05-07 | Legacy NestJS Main App | `4sHHtg1XwERiDc6o2labm` | `prod-main-app-main-apps-wfjeox` | `master` |
+
+### Pre-deploy verification (mandatory)
+
+Before any `compose.deploy` / `compose.stop` / `compose.redeploy`, verify the composeId still maps to the appName you expect:
+
+```bash
+ssh xerox 'docker exec dokploy-postgres.1.zos6qj3u1fm7t10d72r5yzpc0 psql -U dokploy -d dokploy -c \
+"SELECT \"composeId\", name, \"appName\", branch, \"composeStatus\" FROM compose WHERE \"composeId\" = '\''<COMPOSE_ID>'\'';"'
+```
+
+If the row's `appName` doesn't match the table above, **STOP**. The composeId has drifted. Read the `peppy/secrets` drawer for the correct active mapping. Filing aperture-9oxq follow-up tracks automating this guard into the justfile recipes.
 
 ---
 

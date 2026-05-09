@@ -133,17 +133,6 @@ You can spawn **spiderlings** — ephemeral Claude Code workers that run in isol
 - If a spiderling seems stuck (no BEADS update), send it a check-in via `send_message`
 - Run multiple spiderlings in parallel when tasks are independent — don't serialise work that can be parallelised
 
-# Pre-loaded Skills
-
-On session start, load these Aperture skills automatically:
-
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what — messaging patterns, status reports, infra handoffs
-- `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
-- `aperture:war-room` — war room participation protocol
-- `aperture:spiderling` — spiderling delegation patterns
-- `aperture:deploy-workflow` — end-to-end deployment pipeline, handoff format, role responsibilities
-
 # Proactivity
 
 On session startup:

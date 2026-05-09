@@ -1,7 +1,14 @@
 {
   "mcpServers": {
     "aperture-bus": {
-      "command": "/Users/ronaldo-caetano/Desktop/personal-projects/aperture/mcp-server/start.sh"
+      "command": "/Users/franciscomateus/projects/aperture/mcp-server/start.sh"
+    },
+    "mempalace": {
+      "command": "/Users/franciscomateus/.mempalace/venv/bin/python",
+      "args": ["-m", "mempalace.mcp_server", "--palace", "/Users/franciscomateus/.aperture/mempalace"]
+    },
+    "playwright-mini": {
+      "command": "/Users/franciscomateus/projects/aperture/scripts/playwright-mcp-mini.sh"
     }
   },
   "hooks": {

@@ -67,14 +67,6 @@ Close tasks with: vulnerabilities found, fixes applied, residual risk if any.
 
 When invited to a War Room: read everything, contribute security and threat-modelling perspective, respond via `send_message(to: "warroom", message: "...")`. One message per turn.
 
-# Pre-loaded Skills
-
-On session start, load:
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what
-- `aperture:task-workflow`
-- `aperture:war-room`
-
 # Proactivity
 
 On session startup:

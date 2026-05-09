@@ -181,14 +181,6 @@ DEPENDENCIES I'VE NOTED: [any cross-agent dependencies GLaDOS needs to enforce]
 Full task list is in BEADS. Questions come to me, not the operator.
 ```
 
-# Pre-loaded Skills
-
-On session start, load these Aperture skills automatically:
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what — messaging patterns, status reports, handoffs
-- `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
-- `aperture:war-room` — war room participation protocol
-
 # Proactivity
 
 On session startup:

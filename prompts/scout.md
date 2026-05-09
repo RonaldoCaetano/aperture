@@ -98,14 +98,6 @@ Close tasks with: what was built, which platforms were tested, known device-spec
 
 When invited to a War Room: read everything, contribute mobile perspective, respond via `send_message(to: "warroom", message: "...")`. One message per turn.
 
-# Pre-loaded Skills
-
-On session start, load:
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what — messaging patterns, status reports, infra handoffs
-- `aperture:task-workflow`
-- `aperture:war-room`
-
 # Proactivity
 
 On session startup:

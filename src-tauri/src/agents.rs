@@ -40,6 +40,9 @@ pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) 
     let mailbox_dir = format!("{}/.aperture/mailbox", std::env::var("HOME").unwrap_or_else(|_| "/tmp".into()));
     let _ = fs::create_dir_all(format!("{}/{}", mailbox_dir, name));
 
+    let home_dir = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+    let palace_path = format!("{}/.aperture/mempalace", home_dir);
+
     let mcp_config = serde_json::json!({
         "mcpServers": {
             "aperture-bus": {
@@ -51,8 +54,16 @@ pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) 
                     "AGENT_ROLE": &agent.role,
                     "AGENT_MODEL": &agent.model,
                     "APERTURE_MAILBOX": &mailbox_dir,
-                    "BEADS_DIR": format!("{}/.aperture/.beads", std::env::var("HOME").unwrap_or_else(|_| "/tmp".into())),
+                    "BEADS_DIR": format!("{}/.aperture/.beads", home_dir),
                     "BD_ACTOR": &name
+                }
+            },
+            "mempalace": {
+                "type": "stdio",
+                "command": "/usr/bin/python3",
+                "args": ["-m", "mempalace.mcp_server", "--palace", &palace_path],
+                "env": {
+                    "MEMPALACE_WING": &name
                 }
             }
         }
@@ -70,7 +81,7 @@ pub fn start_agent(name: String, state: tauri::State<'_, Arc<Mutex<AppState>>>) 
         // Copy prompt into codex_home so the path is always correct.
         let prompt_content = fs::read_to_string(&agent.prompt_file)
             .map_err(|e| format!("Failed to read prompt file '{}': {}", agent.prompt_file, e))?;
-        let prompt_content = inject_skills(prompt_content, &project_dir);
+        let prompt_content = inject_skills(prompt_content, &name);
         // Prepend any unread BEADS messages so Codex sees them on the first turn
         let prompt_content = codex_harness::inject_pending_messages(&name, prompt_content);
         let prompt_dest = format!("{}/prompt.md", codex_home);
@@ -120,13 +131,21 @@ exec codex --yolo
         )
         .map_err(|e| e.to_string())?;
 
+        // Read prompt and inject agent-specific skills
+        let prompt_content = fs::read_to_string(&agent.prompt_file)
+            .map_err(|e| format!("Failed to read prompt file '{}': {}", agent.prompt_file, e))?;
+        let prompt_content = inject_skills(prompt_content, &name);
+        let prompt_path = format!("/tmp/aperture-prompt-{}.md", name);
+        fs::write(&prompt_path, &prompt_content).map_err(|e| e.to_string())?;
+
         format!(
             r#"#!/bin/bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+cd "{}"
 PROMPT=$(cat "{}")
 exec claude --dangerously-skip-permissions --model {} --system-prompt "$PROMPT" --mcp-config {} --name {}
 "#,
-            agent.prompt_file, agent.model, config_path, name
+            project_dir, prompt_path, agent.model, config_path, name
         )
     };
     fs::write(&launcher_path, &launcher_script).map_err(|e| e.to_string())?;
@@ -416,22 +435,38 @@ pub fn clear_chat_history() -> Result<(), String> {
     fs::write(&chat_log, "").map_err(|e| e.to_string())
 }
 
-pub fn inject_skills(mut prompt: String, project_dir: &str) -> String {
-    let skills_dir = format!("{}/.claude/skills", project_dir);
-    let dir = match fs::read_dir(&skills_dir) {
-        Ok(d) => d,
-        Err(_) => return prompt,
-    };
-    for entry in dir.flatten() {
-        if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
-            continue;
-        }
-        let skill_name = entry.file_name().to_string_lossy().to_string();
-        let base = entry.path();
+pub fn inject_skills(mut prompt: String, agent_name: &str) -> String {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+    let skills_dir = format!("{}/.claude/skills", home);
+    let agents_dir = format!("{}/.claude/agents", home);
+
+    // Read agent-specific skills.txt, fall back to _default/skills.txt
+    let manifest_path = format!("{}/{}/skills.txt", agents_dir, agent_name);
+    let default_path = format!("{}/_default/skills.txt", agents_dir);
+
+    let manifest = fs::read_to_string(&manifest_path)
+        .or_else(|_| fs::read_to_string(&default_path))
+        .unwrap_or_default();
+
+    let skill_names: Vec<&str> = manifest
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .collect();
+
+    if skill_names.is_empty() {
+        eprintln!("[aperture] warn: no skills found for agent '{}'", agent_name);
+        return prompt;
+    }
+
+    eprintln!("[aperture] loading {} skills for '{}': {:?}", skill_names.len(), agent_name, skill_names);
+
+    for skill_name in &skill_names {
+        let base = format!("{}/{}", skills_dir, skill_name);
         let skill_file = ["SKILL.md", "skill.md"]
             .iter()
-            .map(|n| base.join(n))
-            .find(|p| p.exists());
+            .map(|n| format!("{}/{}", base, n))
+            .find(|p| std::path::Path::new(p).exists());
         match skill_file {
             Some(path) => match fs::read_to_string(&path) {
                 Ok(content) => {
@@ -439,7 +474,7 @@ pub fn inject_skills(mut prompt: String, project_dir: &str) -> String {
                 }
                 Err(e) => eprintln!("[aperture] warn: could not read skill '{}': {}", skill_name, e),
             },
-            None => eprintln!("[aperture] warn: skill dir '{}' has no SKILL.md", skill_name),
+            None => eprintln!("[aperture] warn: skill '{}' not found in {}", skill_name, skills_dir),
         }
     }
     prompt

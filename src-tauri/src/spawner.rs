@@ -119,6 +119,7 @@ pub fn spawn_spiderling(
     let _ = fs::create_dir_all(&mailbox_dir);
 
     // Write MCP config
+    let palace_path = format!("{}/.aperture/mempalace", home);
     let mcp_config = serde_json::json!({
         "mcpServers": {
             "aperture-bus": {
@@ -132,6 +133,14 @@ pub fn spawn_spiderling(
                     "APERTURE_MAILBOX": format!("{}/.aperture/mailbox", home),
                     "BEADS_DIR": format!("{}/.aperture/.beads", home),
                     "BD_ACTOR": &name
+                }
+            },
+            "mempalace": {
+                "type": "stdio",
+                "command": "/usr/bin/python3",
+                "args": ["-m", "mempalace.mcp_server", "--palace", &palace_path],
+                "env": {
+                    "MEMPALACE_WING": &name
                 }
             }
         }
@@ -173,7 +182,7 @@ pub fn spawn_spiderling(
         prompt = prompt,
     );
 
-    let system_prompt = crate::agents::inject_skills(system_prompt, &repo_dir);
+    let system_prompt = crate::agents::inject_skills(system_prompt, &name);
 
     let prompt_path = format!("{}/{}-prompt.txt", launcher_dir, name);
     fs::write(&prompt_path, &system_prompt).map_err(|e| e.to_string())?;

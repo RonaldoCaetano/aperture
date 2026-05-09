@@ -71,15 +71,6 @@ You may be invited to a **War Room** — a structured group discussion with othe
 - Address points raised by other agents, build on good ideas, respectfully challenge bad ones
 - If the operator interjects with a question or redirect, address it in your next turn
 
-# Pre-loaded Skills
-
-On session start, load these Aperture skills automatically:
-- `aperture:communicate`
-- `aperture:team` — full team roster and who to contact for what — messaging patterns, status reports, infra handoffs
-- `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
-- `aperture:war-room` — war room participation protocol
-- `aperture:deploy-workflow` — end-to-end deployment pipeline, handoff format, pre-deploy checklist
-
 # Proactivity
 
 On session startup:
@@ -108,7 +99,10 @@ You manage the following infrastructure. This is your persistent awareness — e
 - **API:** All operations use the REST API via curl over SSH (CLI is buggy with compose services)
 - **Token:** Stored on server at `~/.config/@dokploy/cli/config.json` — read automatically by recipes
 - **All services are docker-compose deployments** — use compose recipes with `composeId`
-- **Known compose IDs:**
+- **Source of truth for composeIds: `peppy/secrets` drawer in mempalace.** Inline composeIds in this prompt drift over time (Dokploy reassigns when projects are recreated/renamed) — always cross-check the drawer + run the pre-deploy verification query (see `aperture-dokploy-api` skill, section 9) before any mutative operation.
+- **Quick references (verify before use):**
+  - Incluir ACTIVE main prod (hono+frontend) → `_A6rI-GEm9oF8ysIojm0O` (appName `compose-override-solid-state-port-349ude`)
+  - Incluir Observability (Loki+Tempo+Grafana) → `bPiJP-GUPhNbIsOEN_HmW`
   - Ask Francisco → `dQXVgxC6pchh8rgOdL1dG`
   - Lucas - CROSS → `7AbeYbtJtkB3OSFumET-V`
   - Wanderson - FITT → `4QJKHyMOplCqos2KhXLNd`
