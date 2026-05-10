@@ -67,8 +67,7 @@ No sockets. No long-lived queues. Mailbox state is fully debuggable, resilient t
 
 | Agent | Model | Role |
 |-------|-------|------|
-| **The Planner** | Opus | Project direction — turns operator briefs into BEADS task plans, gets sign-off, briefs GLaDOS |
-| **GLaDOS** | Opus | Orchestration — delegates tasks to specialists or to parallel subagents via the Agent tool |
+| **GLaDOS** | Opus | Orchestration — decomposes operator briefs into BEADS tasks, delegates to specialists or parallel subagents via the Agent tool |
 | **Wheatley** | Sonnet | Planning & research — specs, technical research, small scoped implementations |
 | **Peppy** | Opus | Infrastructure — Docker, deployments, Dokploy, CI/CD |
 | **Izzy** | Opus | QA — tests, code review, quality gate sign-off |
@@ -78,7 +77,6 @@ No sockets. No long-lived queues. Mailbox state is fully debuggable, resilient t
 | **Cipher** | Opus | Security review |
 | **Sage** | Opus | SEO, content, growth |
 | **Atlas** | Opus | Documentation |
-| **Sentinel** | Opus | System health monitoring |
 | **Sterling** | Opus | Quality enforcement / final sign-off |
 
 See `AGENTS.md` for the full lane definitions.
@@ -106,7 +104,7 @@ Task tracking backed by [Dolt](https://github.com/dolthub/dolt) (a version-contr
 GLaDOS delegates scoped, parallelisable work using Claude Code's native **Agent tool** — fire-and-return subagents that run in the same session. Multiple `Agent` calls in a single message run concurrently. Specialists (Wheatley/Peppy/etc.) handle lane-specific persistent work; subagents handle scoped one-shot tasks. See the `aperture:subagents` skill for the full delegation protocol.
 
 ### Specialists
-Persistent named agents (GLaDOS, Wheatley, Peppy, Izzy, Vance, Rex, Scout, Cipher, Sage, Atlas, Sentinel, Sterling, Planner) with their own tmux windows, models, and prompts. Each one has a defined lane. Cross-lane delegation flows through GLaDOS via BEADS.
+Persistent named agents (GLaDOS, Wheatley, Peppy, Izzy, Vance, Rex, Scout, Cipher, Sage, Atlas, Sterling) with their own tmux windows, models, and prompts. Each one has a defined lane. Cross-lane delegation flows through GLaDOS via BEADS.
 
 ### Version Footer
 The launcher footer shows `vX.Y.Z · <git-sha> · YYYY-MM-DD` — semver from `Cargo.toml`, short git SHA + UTC build date baked into the Rust binary at build time (`src-tauri/build.rs`). Lets the operator confirm a reinstall actually picked up the latest commit.

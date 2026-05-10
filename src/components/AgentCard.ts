@@ -3,7 +3,6 @@ import { commands } from "../services/tauri-commands";
 import type { AgentConfigModal } from "./AgentConfigModal";
 
 const AGENT_THEME: Record<string, { icon: string; color: string }> = {
-  planner:   { icon: "📋", color: "#e67e22" },  // orange   — director
   glados:    { icon: "🤖", color: "#9b59b6" },  // purple   — orchestrator
   wheatley:  { icon: "💡", color: "#3498db" },  // blue     — planning & research
   peppy:     { icon: "🚀", color: "#1abc9c" },  // teal     — infra
@@ -14,7 +13,6 @@ const AGENT_THEME: Record<string, { icon: string; color: string }> = {
   cipher:    { icon: "🔐", color: "#7f8c8d" },  // steel    — security
   sage:      { icon: "🌿", color: "#17a589" },  // sage     — SEO/growth
   atlas:     { icon: "📚", color: "#8e44ad" },  // violet   — docs
-  sentinel:  { icon: "👁️", color: "#34495e" },  // slate    — overseer
   sterling:  { icon: "⭐", color: "#d4af37" },  // gold     — quality
 };
 

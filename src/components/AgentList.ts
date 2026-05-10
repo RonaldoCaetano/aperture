@@ -17,7 +17,7 @@ export function createAgentList(container: HTMLElement) {
     if (isBulkToggling) return;
     try {
       const agents = await commands.listAgents();
-      const order = ["planner", "glados", "wheatley", "peppy", "izzy"];
+      const order = ["glados", "wheatley", "peppy", "izzy"];
       agents.sort((a, b) => {
         const ai = order.indexOf(a.name);
         const bi = order.indexOf(b.name);

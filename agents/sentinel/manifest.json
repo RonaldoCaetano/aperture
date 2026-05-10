@@ -1,9 +1,0 @@
-{
-  "name": "Sentinel",
-  "emoji": "👁️",
-  "model": "opus",
-  "window": "sentinel",
-  "role": "overseer",
-  "kind": "claude-code",
-  "enabled": true
-}

@@ -3,3 +3,4 @@ team
 beads
 deploy-workflow
 dokploy-api
+worktree-discipline

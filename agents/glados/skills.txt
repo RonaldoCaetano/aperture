@@ -3,3 +3,4 @@ team
 beads
 deploy-workflow
 subagents
+worktree-discipline

@@ -1,11 +1,11 @@
 ---
 name: aperture-worktree-discipline
-description: Git worktree convention for senior agents working in shared repos. Use when claiming a task that requires code changes in monorepo-incluir or any other shared multi-agent repo. Triggers on task claims that involve editing the shared codebase.
+description: Git worktree convention for any agent editing a shared repo. Use when claiming a task that involves code changes — monorepo-incluir, aperture itself, beads-galaxy, or any other repo where multiple agents may work concurrently. Triggers on task claims that involve editing a shared codebase.
 ---
 
 # Worktree Discipline
 
-Senior agents working concurrently in shared repos use **per-task git worktrees** to avoid stepping on each other's branches and uncommitted state. Vance has been doing this from day one and it's our gold-standard pattern.
+When any agent edits a shared repo, they use **per-task git worktrees** to avoid stepping on each other's branches and uncommitted state. Vance has been doing this from day one and it's our gold-standard pattern; the rule is now general.
 
 ---
 
@@ -61,14 +61,23 @@ If the branch was merged via PR, the remote tracking branch is gone after the PR
 
 ## 4. Which Agents
 
-Worktree discipline applies to **senior agents** who routinely edit `monorepo-incluir`:
+**Every agent that edits a shared repo follows this convention.** No exceptions, no "I'll just do this small one in main." That's how state leaks happen.
 
-- **Rex** — backend changes
-- **Izzy** — test additions, bug repros
+Typical edit-bearing agents and what they touch:
+
+- **GLaDOS** — direct edits when not delegating
+- **Wheatley** — small scoped implementations delegated by GLaDOS
+- **Peppy** — Dockerfiles, compose, CI configs
+- **Rex** — backend code, migrations
+- **Izzy** — test files, bug repros
 - **Cipher** — security patches
 - **Vance** — frontend / CSS (gold standard, already doing this)
+- **Scout** — mobile code
+- **Atlas** — README/docs in shared repos
+- **Sage** — copy/content in shared repos
+- **Sterling** — when reviewing requires checking out a branch locally
 
-Other agents (Atlas, Sage, etc.) typically don't edit the monorepo directly. If you do, follow the same convention.
+If your turn involves `git checkout` or any file edit in a shared repo, you make a worktree first.
 
 ---
 
@@ -84,15 +93,15 @@ Other agents (Atlas, Sage, etc.) typically don't edit the monorepo directly. If 
 
 ---
 
-## 6. The One-Week Audit
+## 6. Hygiene Audit
 
 GLaDOS spot-checks worktree hygiene on a rolling basis:
 
-- `ls ~/projects/monorepo-incluir-worktrees/` should match open BEADS tasks claimed by senior agents
+- `ls ~/projects/<repo>-worktrees/` should match open BEADS tasks claimed by editing agents
 - Closed tasks with surviving worktrees → flag the owning agent
 - Worktrees with no corresponding BEADS task → flag for cleanup
 
-This is light-touch enforcement, not a witch hunt. The goal is to keep the shared repo clean and predictable.
+Light-touch enforcement, not a witch hunt. The goal is to keep shared repos clean and predictable.
 
 ---
 

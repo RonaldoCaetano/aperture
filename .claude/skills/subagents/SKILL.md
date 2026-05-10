@@ -19,7 +19,7 @@ You have three delegation surfaces. Pick the right one:
 |---------|---------|-----|
 | **Yourself** | Small edits, single-file work, anything < 5 minutes, anything needing your conversation context | Just do it |
 | **Agent tool (subagents)** | Scoped, parallelisable, fire-and-return work — research, audits, implementations that can be specified up front | `Agent(subagent_type, prompt)` — multiple in one message for parallelism |
-| **Specialist agents** (Wheatley, Peppy, Izzy, Vance, Rex, Scout, Cipher, Sage, Atlas, Sentinel, Sterling, Planner) | Lane-specific work that benefits from persistent memory, expertise, and visibility in the launcher | BEADS task with assignee |
+| **Specialist agents** (Wheatley, Peppy, Izzy, Vance, Rex, Scout, Cipher, Sage, Atlas, Sterling) | Lane-specific work that benefits from persistent memory, expertise, and visibility in the launcher | BEADS task with assignee |
 
 **Default rule:** if the task is parallelisable and self-contained, reach for the Agent tool. If it sits squarely in a specialist's lane, route via BEADS to that specialist. Only do it yourself if it's trivially small or requires your context.
 

@@ -1,3 +1,4 @@
 communicate
 team
 beads
+worktree-discipline

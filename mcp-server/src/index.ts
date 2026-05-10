@@ -22,7 +22,7 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-const PERMANENT_RECIPIENTS = ["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sentinel", "sterling", "planner", "operator"];
+const PERMANENT_RECIPIENTS = ["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sterling", "operator"];
 
 function isValidRecipient(name: string): boolean {
   return PERMANENT_RECIPIENTS.includes(name);
@@ -32,8 +32,8 @@ function isValidRecipient(name: string): boolean {
 
 server.tool(
   "send_message",
-  "Send a message to another agent or the human operator. Valid recipients: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator. Use 'operator' to reach the human (lights up an attention badge — does not deliver text to a UI).",
-  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, or operator"), message: z.string().describe("Message content. NOTE: avoid literal XML/HTML close-tag patterns like `</message>`, `</reason>` inside the body — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase.") },
+  "Send a message to another agent or the human operator. Valid recipients: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sterling, operator. Use 'operator' to reach the human (lights up an attention badge — does not deliver text to a UI).",
+  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sterling, or operator"), message: z.string().describe("Message content. NOTE: avoid literal XML/HTML close-tag patterns like `</message>`, `</reason>` inside the body — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase.") },
   async ({ to, message }) => {
     const target = to.toLowerCase().trim();
 

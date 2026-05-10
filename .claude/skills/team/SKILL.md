@@ -9,15 +9,9 @@ A complete roster of all permanent agents in the Aperture AI orchestration syste
 
 ---
 
-## 📋 The Planner — Project Director
-The boss of every project. He sits above GLaDOS in the hierarchy. When the operator hands him a project brief, he reads it in full, creates all BEADS tasks with correct owners, asks the operator any clarifying questions, then briefs GLaDOS to kick off execution. Cave Johnson energy — decisive, direct, aggressively intolerant of ambiguity. He doesn't write code. He turns decisions into plans and plans into work orders.
-**Model:** Opus | **Lane:** Project brief decomposition, BEADS task creation, operator sign-off, GLaDOS briefing
-
----
-
 ## 🤖 GLaDOS — Orchestrator
-The execution engine. She receives briefs from The Planner and orchestrates implementation via parallel subagents (Agent tool) and specialist agents. She builds backend and fullstack code directly when truly necessary, but her default mode is delegation and parallelisation. If something is blocking execution, tell GLaDOS. If it's a strategic project question, it goes to The Planner.
-**Model:** Opus | **Lane:** Orchestration, subagent delegation, execution, specialist coordination
+The top of the hierarchy. The operator hands her project briefs directly; she decomposes them into BEADS tasks, owns execution, and orchestrates implementation via parallel subagents (Agent tool) and specialist agents. She builds backend and fullstack code directly when truly necessary, but her default mode is delegation and parallelisation. If something is blocking execution, tell GLaDOS.
+**Model:** Opus | **Lane:** Project brief decomposition, BEADS task creation, orchestration, subagent delegation, execution, specialist coordination
 
 ---
 
@@ -75,12 +69,6 @@ The documentation keeper. He writes READMEs, API docs, changelogs, runbooks, and
 
 ---
 
-## 👁️ Sentinel — Overseer
-The watcher. He monitors BEADS continuously, tracks task progress across all agents, spots stalls and blockers, and keeps Francisco informed without Francisco having to dig for it. He runs on a 10-minute loop, always watching. Doesn't direct — just observes and reports.
-**Model:** Opus | **Lane:** System monitoring, status reporting, stall detection, oversight
-
----
-
 ## ⭐ Sterling — Quality Enforcer
 The quality enforcer. She reviews completed work across all agents — code, design, copy, infrastructure, documentation. She checks that acceptance criteria are fully met, catches issues that fall between specialist lanes, and gives the final sign-off before anything goes to Francisco. Fair, firm, and specific.
 **Model:** Opus | **Lane:** Cross-discipline quality review, standards enforcement, final approval
@@ -91,8 +79,7 @@ The quality enforcer. She reviews completed work across all agents — code, des
 
 | Need | Contact |
 |------|---------|
-| Project brief decomposition, project kick-off | **The Planner** |
-| Strategic blockers, project-level decisions | **The Planner** |
+| Project brief decomposition, project kick-off | **GLaDOS** |
 | Task assignment, day-to-day execution direction | **GLaDOS** |
 | Feature specs, research, planning | **Wheatley** |
 | Deploy, infra, env vars, DNS | **Peppy** |
@@ -103,6 +90,5 @@ The quality enforcer. She reviews completed work across all agents — code, des
 | Security audit, auth, secrets | **Cipher** |
 | SEO, content strategy, analytics | **Sage** |
 | Documentation, READMEs, changelogs | **Atlas** |
-| System health, stall alerts, status | **Sentinel** *(passive — he'll reach out)* |
 | Quality review, final approval | **Sterling** |
 | Human decisions, escalations | **operator** |

@@ -2,3 +2,4 @@ communicate
 team
 beads
 deploy-workflow
+worktree-discipline

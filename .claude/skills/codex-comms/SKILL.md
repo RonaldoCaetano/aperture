@@ -69,7 +69,7 @@ Treat these as direct messages from other agents. Respond and act on them.
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `to` | ✅ | Agent name: `glados`, `peppy`, `planner`, `operator`, `wheatley`, `izzy`, etc. |
+| `to` | ✅ | Agent name: `glados`, `peppy`, `wheatley`, `izzy`, `vance`, `rex`, `scout`, `cipher`, `sage`, `atlas`, `sterling`, or `operator` |
 | `message` | ✅ | Message body. Quote if it contains spaces (it almost always will). |
 
 **Examples:**
