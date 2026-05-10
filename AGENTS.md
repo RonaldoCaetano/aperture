@@ -39,7 +39,9 @@ bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 
 bd create "Issue title" --description="What this issue is about" -p 1 --label project:aperture --deps discovered-from:bd-123 --json
 ```
 
-**Project label is REQUIRED.** Every task carries exactly one `project:<name>` label. Canonical taxonomy: `project:aperture`, `project:incluir`, `project:beads-galaxy`, `project:mempalace`. See the `aperture:project-labels` skill for the full convention. Tasks without a project label become invisible to project-scoped queries.
+**Project label is REQUIRED.** Every task carries exactly one `project:<name>` label. Canonical taxonomy: `project:aperture`, `project:incluir`, `project:beads-galaxy`, `project:mempalace`. See the `aperture:beads` skill for the full convention. Tasks without a project label become invisible to project-scoped queries.
+
+**A task is closed when the PR is opened, NOT when it's merged.** PR-open = work shipped from the agent's side. Reviewer feedback creates a follow-up task. See `aperture:beads` section 3.
 
 **Claim and update:**
 
@@ -127,7 +129,7 @@ To see what an agent loads: `ls ~/.claude/aperture/<agent>/skills/`. To add or
 remove a skill, edit `agents/<agent>/skills.txt` and re-run `just setup` — no
 recompile needed.
 
-Common skills carried by all agents: `communicate`, `team`, `task-workflow`, `project-labels`.
+Common skills carried by all agents: `communicate`, `team`, `beads`.
 
 Domain-specific additions:
 - **GLaDOS:** `subagents` (Agent-tool delegation), `deploy-workflow`

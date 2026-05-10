@@ -1,4 +1,3 @@
 communicate
 team
-task-workflow
-project-labels
+beads

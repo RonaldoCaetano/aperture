@@ -136,7 +136,7 @@ aperture/
 ├── mcp-server/                # aperture-bus MCP server (Node.js)
 │   └── src/index.ts           # MCP tool definitions (send_message, BEADS, ...)
 ├── prompts/                   # Per-agent system prompts (one .md per agent)
-├── .claude/skills/            # Aperture skills (communicate, task-workflow, subagents, team, ...)
+├── .claude/skills/            # Aperture skills (communicate, beads, subagents, team, ...)
 ├── AGENTS.md                  # Agent lane definitions
 └── README.md
 ```
@@ -185,9 +185,8 @@ The repo holds canonical sources (`agents/<name>/{manifest.json, skills.txt}`, `
 | Skill | Purpose |
 |-------|---------|
 | `communicate` | Inter-agent messaging patterns, status reports |
-| `task-workflow` | BEADS task lifecycle (claim → work → artifact → close) |
 | `team` | Agent roster and routing reference |
-| `project-labels` | BEADS `project:<name>` taxonomy (every task carries one) |
+| `beads` | Complete BEADS discipline — authoring, project labels, full lifecycle (claim → work → close) |
 | `subagents` | Subagent delegation patterns (Agent tool, parallel invocations) — primarily for GLaDOS |
 | `worktree-discipline` | Per-task git worktree convention for senior monorepo-incluir agents |
 | `deploy-workflow` | End-to-end deployment pipeline |

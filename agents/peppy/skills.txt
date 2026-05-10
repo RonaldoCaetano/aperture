@@ -1,6 +1,5 @@
 communicate
 team
-task-workflow
+beads
 deploy-workflow
 dokploy-api
-project-labels

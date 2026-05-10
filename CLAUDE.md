@@ -21,7 +21,8 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-- **Every `bd create` MUST include a `--label project:<name>` flag.** Canonical taxonomy: `project:aperture`, `project:incluir`, `project:beads-galaxy`, `project:mempalace`. See the `aperture:project-labels` skill for the convention.
+- **Every `bd create` MUST include a `--label project:<name>` flag.** Canonical taxonomy: `project:aperture`, `project:incluir`, `project:beads-galaxy`, `project:mempalace`. See the `aperture:beads` skill for the full discipline.
+- **A task is closed when its PR is OPENED, not when merged.** Reviewer feedback creates a follow-up task. Don't hold tasks open through merge.
 
 ## Session Completion
 
