@@ -1,0 +1,9 @@
+{
+  "name": "Izzy",
+  "emoji": "🧪",
+  "model": "opus",
+  "window": "izzy",
+  "role": "testing",
+  "kind": "claude-code",
+  "enabled": true
+}

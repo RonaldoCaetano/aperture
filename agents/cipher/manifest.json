@@ -1,0 +1,9 @@
+{
+  "name": "Cipher",
+  "emoji": "🔐",
+  "model": "opus",
+  "window": "cipher",
+  "role": "security",
+  "kind": "claude-code",
+  "enabled": true
+}

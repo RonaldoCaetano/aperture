@@ -129,45 +129,79 @@ html, body {
   border-bottom: 1px solid var(--border);
 }
 
-/* ── Sidebar Footer (version line) ──
-   Pinned to the bottom via margin-top: auto. Renders as
-   `vX.Y.Z · sha · YYYY-MM-DD` — values baked into the binary at build time
-   so the operator can confirm a reinstall picked up the right commit. */
+/* ── Sidebar Footer (version badge) ──
+   Pinned to the bottom via margin-top: auto. Two-line layout:
+     1. Prominent version pill (orange tint, bold, monospace)
+     2. Short SHA · UTC build date (dim monospace metadata)
+   Values are baked into the binary at build time (src-tauri/build.rs +
+   env! macros), so the badge reflects the binary, not the working tree —
+   that's what makes it useful as a reinstall verification surface. */
 #sidebar-footer {
   margin-top: auto;
-  padding: 8px 12px;
+  padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'MesloLGS NF', monospace;
-  font-size: 10px;
-  color: var(--text-secondary);
-  opacity: 0.7;
+  flex-direction: column;
+  gap: 7px;
   flex-shrink: 0;
-  white-space: nowrap;
-  overflow: hidden;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
 }
 
 #sidebar-footer:empty {
   display: none;
 }
 
-.sidebar-footer__semver {
+.sidebar-footer__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sidebar-footer__row--version {
+  justify-content: flex-start;
+}
+
+.sidebar-footer__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  font-family: 'JetBrains Mono', 'MesloLGS NF', ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--accent-orange);
-  font-weight: 600;
+  background: rgba(243, 156, 18, 0.12);
+  border: 1px solid rgba(243, 156, 18, 0.38);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.sidebar-footer__sha {
+.sidebar-footer__row--meta {
+  font-family: 'JetBrains Mono', 'MesloLGS NF', ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
   color: var(--text-secondary);
+  opacity: 0.7;
+  padding-left: 2px;
 }
 
+.sidebar-footer__sha,
 .sidebar-footer__date {
   color: var(--text-secondary);
 }
 
 .sidebar-footer__sep {
   color: var(--border);
+  opacity: 0.7;
 }
 
 #sidebar-active-agent {

@@ -1,0 +1,9 @@
+{
+  "name": "Vance",
+  "emoji": "🎨",
+  "model": "opus",
+  "window": "vance",
+  "role": "design",
+  "kind": "claude-code",
+  "enabled": true
+}

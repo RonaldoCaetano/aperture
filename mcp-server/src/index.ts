@@ -19,7 +19,7 @@ store.ensureMailbox(AGENT_NAME);
 
 const server = new McpServer({
   name: "aperture-bus",
-  version: "0.3.0",
+  version: "1.0.0",
 });
 
 const PERMANENT_RECIPIENTS = ["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sentinel", "sterling", "planner", "operator"];
@@ -209,15 +209,30 @@ server.tool(
 
 server.tool(
   "query_tasks",
-  "Query BEADS tasks. Modes: 'list' (active tasks, slim fields), 'ready' (unblocked, slim), 'show' (full detail for single task by ID). Done/closed tasks are excluded by default from list/ready — set include_done=true only when you need historical data.",
+  `Query BEADS tasks. Modes: 'list' (active tasks), 'ready' (unblocked), 'show' (full detail for single task by ID). In 'list' mode this defaults to YOUR own assigned tasks — pass assignee:"*" for any. Defaults to summary fields with description/notes truncated to 200 chars — pass fields:"full" for everything. Use project:"aperture" to filter by the project:aperture label. Done/closed tasks excluded by default; pass include_done:true for historical data. 'show' mode ignores all filters and returns full detail.`,
   {
     mode: z.enum(["list", "ready", "show"]).describe("Query mode"),
     id: z.string().optional().describe("Task ID (required for 'show' mode)"),
-    include_done: z.boolean().optional().describe("Include done/closed tasks (default: false). Only set true if you need historical data — it significantly increases response size."),
+    include_done: z.boolean().optional().describe("Include done/closed tasks (default: false). Significantly increases response size."),
+    project: z.string().optional().describe("Filter by project label (e.g. 'aperture' matches tasks tagged project:aperture)."),
+    assignee: z.string().optional().describe("Filter by assignee. Defaults to YOU in 'list' mode. Pass '*' for any assignee. Ignored in 'ready' mode."),
+    priority_max: z.number().min(0).max(4).optional().describe("Keep tasks with priority ≤ this value (0=highest, 4=backlog)."),
+    label: z.string().optional().describe("Filter by an arbitrary label."),
+    fields: z.enum(["summary", "full"]).optional().describe("Projection mode. 'summary' (default) returns id,title,status,priority,assignee,owner,labels + truncated description/notes. 'full' returns everything. Use 'show' mode for a single task's full detail."),
   },
-  async ({ mode, id, include_done }) => {
+  async ({ mode, id, include_done, project, assignee, priority_max, label, fields }) => {
     try {
-      const result = await queryTasks(mode, id, { includeDone: include_done });
+      // Default to caller's own tasks in list mode unless they ask for "*".
+      const effectiveAssignee =
+        mode === "list" && assignee === undefined ? AGENT_NAME : assignee;
+      const result = await queryTasks(mode, id, {
+        includeDone: include_done,
+        project,
+        assignee: effectiveAssignee,
+        priorityMax: priority_max,
+        label,
+        fields,
+      });
       return { content: [{ type: "text", text: result }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };
@@ -245,14 +260,25 @@ server.tool(
 
 server.tool(
   "search_tasks",
-  "Search BEADS tasks, optionally filtered by label. Returns slim fields, excludes done tasks by default.",
+  `Search BEADS tasks. Defaults to summary fields with description/notes truncated — pass fields:"full" for everything. Use project:"aperture" to filter by the project:aperture label. Done/closed tasks excluded by default. Unlike query_tasks, this does NOT auto-filter by assignee — pass assignee explicitly if you need it.`,
   {
-    label: z.string().optional().describe("Filter by label"),
-    include_done: z.boolean().optional().describe("Include done/closed tasks (default: false)"),
+    label: z.string().optional().describe("Filter by label."),
+    project: z.string().optional().describe("Filter by project label (e.g. 'aperture' matches tasks tagged project:aperture)."),
+    assignee: z.string().optional().describe("Filter by assignee. Pass '*' or omit for any assignee."),
+    priority_max: z.number().min(0).max(4).optional().describe("Keep tasks with priority ≤ this value (0=highest, 4=backlog)."),
+    include_done: z.boolean().optional().describe("Include done/closed tasks (default: false)."),
+    fields: z.enum(["summary", "full"]).optional().describe("Projection mode. 'summary' (default) returns id,title,status,priority,assignee,owner,labels + truncated description/notes. 'full' returns everything."),
   },
-  async ({ label, include_done }) => {
+  async ({ label, project, assignee, priority_max, include_done, fields }) => {
     try {
-      const result = await searchTasks(label, { includeDone: include_done });
+      const result = await searchTasks({
+        label,
+        project,
+        assignee,
+        priorityMax: priority_max,
+        includeDone: include_done,
+        fields,
+      });
       return { content: [{ type: "text", text: result }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };

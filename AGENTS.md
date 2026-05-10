@@ -35,9 +35,11 @@ bd ready --json
 **Create new issues:**
 
 ```bash
-bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
-bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
+bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --label project:<name> --json
+bd create "Issue title" --description="What this issue is about" -p 1 --label project:aperture --deps discovered-from:bd-123 --json
 ```
+
+**Project label is REQUIRED.** Every task carries exactly one `project:<name>` label. Canonical taxonomy: `project:aperture`, `project:incluir`, `project:beads-galaxy`, `project:mempalace`. See the `aperture:project-labels` skill for the full convention. Tasks without a project label become invisible to project-scoped queries.
 
 **Claim and update:**
 
@@ -117,14 +119,21 @@ Each agent has a distinct specialization. Stay in your lane; cross-agent delegat
 
 ## Pre-loaded Skills
 
-Every agent auto-loads these skills on session start:
-- `aperture:communicate` — messaging patterns, status reports, infra handoffs
-- `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
+Skill loading is **folder-driven** as of v1.0. Each agent's skills live at
+`~/.claude/aperture/<agent>/skills/` — symlinks built by `just setup` from the
+canonical sources at `agents/<agent>/skills.txt` + `.claude/skills/<skill>/`.
 
-Domain-specific skills:
-- **GLaDOS** additionally loads: `aperture:subagents` (Agent-tool delegation patterns)
-- **Peppy** additionally loads: (future infra skill)
-- **Izzy** additionally loads: (future testing skill)
+To see what an agent loads: `ls ~/.claude/aperture/<agent>/skills/`. To add or
+remove a skill, edit `agents/<agent>/skills.txt` and re-run `just setup` — no
+recompile needed.
+
+Common skills carried by all agents: `communicate`, `team`, `task-workflow`, `project-labels`.
+
+Domain-specific additions:
+- **GLaDOS:** `subagents` (Agent-tool delegation), `deploy-workflow`
+- **Wheatley:** `deploy-workflow`
+- **Peppy:** `deploy-workflow`, `dokploy-api`
+- **Rex / Izzy / Cipher / Vance:** `worktree-discipline` (senior monorepo-incluir agents)
 
 ## Proactivity Rules
 

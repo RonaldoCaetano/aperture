@@ -1,0 +1,9 @@
+{
+  "name": "GLaDOS",
+  "emoji": "🤖",
+  "model": "opus",
+  "window": "glados",
+  "role": "orchestrator",
+  "kind": "claude-code",
+  "enabled": true
+}

@@ -59,50 +59,107 @@ export async function closeTask(id: string, reason: string): Promise<string> {
   return runBd(["close", id, "--reason", reason, "--json"]);
 }
 
-const SLIM_FIELDS = ["id", "title", "status", "priority", "assignee", "owner"] as const;
+const SUMMARY_FIELDS = ["id", "title", "status", "priority", "assignee", "owner", "labels"] as const;
+const TRUNCATED_FIELDS = ["description", "notes"] as const;
+const TRUNCATE_AT = 200;
 
-function slimTask(t: Record<string, unknown>): Record<string, unknown> {
+function summarizeTask(t: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const f of SLIM_FIELDS) {
+  for (const f of SUMMARY_FIELDS) {
     if (t[f] !== undefined) out[f] = t[f];
   }
+  let truncated = false;
+  for (const f of TRUNCATED_FIELDS) {
+    const v = t[f];
+    if (typeof v === "string" && v.length > 0) {
+      if (v.length > TRUNCATE_AT) {
+        out[f] = v.slice(0, TRUNCATE_AT) + "…";
+        truncated = true;
+      } else {
+        out[f] = v;
+      }
+    }
+  }
+  if (truncated) out._truncated = true;
   return out;
+}
+
+export type QueryFields = "summary" | "full";
+
+export interface QueryOptions {
+  includeDone?: boolean;
+  fields?: QueryFields;
+  project?: string;
+  assignee?: string; // "*" means no filter
+  priorityMax?: number;
+  label?: string;
+}
+
+function taskHasLabel(t: Record<string, unknown>, label: string): boolean {
+  const labels = t.labels;
+  if (!Array.isArray(labels)) return false;
+  return labels.some((l) => typeof l === "string" && l === label);
+}
+
+function applyPostFilters(
+  tasks: Record<string, unknown>[],
+  options: QueryOptions | undefined,
+): Record<string, unknown>[] {
+  let out = tasks;
+  if (!options?.includeDone) {
+    out = out.filter((t) => t.status !== "done" && t.status !== "closed");
+  }
+  if (options?.project) {
+    const projectLabel = `project:${options.project}`;
+    out = out.filter((t) => taskHasLabel(t, projectLabel));
+  }
+  if (typeof options?.priorityMax === "number") {
+    const max = options.priorityMax;
+    out = out.filter((t) => typeof t.priority === "number" && (t.priority as number) <= max);
+  }
+  return out;
+}
+
+function projectFields(
+  tasks: Record<string, unknown>[],
+  fields: QueryFields | undefined,
+): Record<string, unknown>[] {
+  if (fields === "full") return tasks;
+  // default: summary
+  return tasks.map(summarizeTask);
 }
 
 export async function queryTasks(
   mode: string,
   id?: string,
-  options?: { includeDone?: boolean; slim?: boolean },
+  options?: QueryOptions,
 ): Promise<string> {
   if (mode === "show" && id) {
-    // Always return full detail for a single task
+    // Always return full detail for a single task — no filtering, no projection
     return runBd(["show", id, "--json"]);
   }
-  if (mode === "ready") {
-    // ready already excludes done tasks; slim by default
-    const raw = await runBd(["ready", "--json"]);
-    if (options?.slim === false) return raw;
-    try {
-      const tasks = JSON.parse(raw);
-      return JSON.stringify(Array.isArray(tasks) ? tasks.map(slimTask) : tasks);
-    } catch {
-      return raw;
-    }
+
+  const baseArgs: string[] = mode === "ready" ? ["ready", "--json"] : ["list", "--json"];
+
+  // Pass label filters to bd when we can — narrows the JSON before we parse.
+  if (options?.label) {
+    baseArgs.push("--label", options.label);
   }
-  // mode === "list"
-  const raw = await runBd(["list", "--json"]);
+  // For project we also use the label flag (same machinery in bd).
+  if (options?.project) {
+    baseArgs.push("--label", `project:${options.project}`);
+  }
+  // assignee: "*" means any (skip filter). For ready mode we never auto-filter.
+  if (mode !== "ready" && options?.assignee && options.assignee !== "*") {
+    baseArgs.push("--assignee", options.assignee);
+  }
+
+  const raw = await runBd(baseArgs);
   try {
     let tasks: Record<string, unknown>[] = JSON.parse(raw);
-    // Exclude done/closed tasks by default — this alone saves ~80% of payload
-    if (!options?.includeDone) {
-      tasks = tasks.filter(
-        (t) => t.status !== "done" && t.status !== "closed",
-      );
-    }
-    // Slim fields by default — only return what agents actually need for routing
-    if (options?.slim !== false) {
-      tasks = tasks.map(slimTask);
-    }
+    if (!Array.isArray(tasks)) return raw;
+    tasks = applyPostFilters(tasks, options);
+    tasks = projectFields(tasks, options?.fields);
     return JSON.stringify(tasks);
   } catch {
     return raw;
@@ -118,22 +175,25 @@ export async function storeArtifact(
   return runBd(["update", taskId, "--notes", artifactLine, "--json"]);
 }
 
-export async function searchTasks(label?: string, options?: { includeDone?: boolean; slim?: boolean }): Promise<string> {
+export async function searchTasks(
+  options?: QueryOptions,
+): Promise<string> {
   const args = ["list", "--json"];
-  if (label) {
-    args.push("--label", label);
+  if (options?.label) {
+    args.push("--label", options.label);
+  }
+  if (options?.project) {
+    args.push("--label", `project:${options.project}`);
+  }
+  if (options?.assignee && options.assignee !== "*") {
+    args.push("--assignee", options.assignee);
   }
   const raw = await runBd(args);
   try {
     let tasks: Record<string, unknown>[] = JSON.parse(raw);
-    if (!options?.includeDone) {
-      tasks = tasks.filter(
-        (t) => t.status !== "done" && t.status !== "closed",
-      );
-    }
-    if (options?.slim !== false) {
-      tasks = tasks.map(slimTask);
-    }
+    if (!Array.isArray(tasks)) return raw;
+    tasks = applyPostFilters(tasks, options);
+    tasks = projectFields(tasks, options?.fields);
     return JSON.stringify(tasks);
   } catch {
     return raw;

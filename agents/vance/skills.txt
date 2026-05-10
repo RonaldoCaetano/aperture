@@ -1,0 +1,5 @@
+communicate
+team
+task-workflow
+project-labels
+worktree-discipline

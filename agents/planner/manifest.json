@@ -1,0 +1,9 @@
+{
+  "name": "The Planner",
+  "emoji": "📋",
+  "model": "opus",
+  "window": "planner",
+  "role": "director",
+  "kind": "claude-code",
+  "enabled": true
+}

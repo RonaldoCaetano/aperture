@@ -1,0 +1,9 @@
+{
+  "name": "Scout",
+  "emoji": "📱",
+  "model": "opus",
+  "window": "scout",
+  "role": "mobile",
+  "kind": "claude-code",
+  "enabled": true
+}

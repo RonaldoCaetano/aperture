@@ -1,3 +1,4 @@
+mod agent_loader;
 mod agents;
 mod beads_parser;
 mod codex_harness;

@@ -1,0 +1,9 @@
+{
+  "name": "Rex",
+  "emoji": "🗄️",
+  "model": "opus",
+  "window": "rex",
+  "role": "backend",
+  "kind": "claude-code",
+  "enabled": true
+}

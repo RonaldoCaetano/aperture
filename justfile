@@ -7,48 +7,119 @@ set shell := ["bash", "-cu"]
 default:
     @just --list
 
-# ============== Skills ==============
+# ============== Setup (runtime tree) ==============
 
-# Symlink Aperture skills to ~/.claude/skills/ for global availability
-setup-skills:
+# Build the ~/.claude/aperture/ runtime tree from the repo's canonical sources.
+# Each agent gets a folder with manifest.json + prompt.md + skills/. All entries
+# are symlinks back into the repo, so editing here updates the runtime in place.
+# Re-run this whenever you add/remove an agent, skill, or change a manifest.
+setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "🔗 Symlinking Aperture skills to ~/.claude/skills/..."
-    mkdir -p "$HOME/.claude/skills"
-    for skill_dir in .claude/skills/*/; do
-        name=$(basename "$skill_dir")
-        abs_path="$(cd "$skill_dir" && pwd)"
-        ln -sfn "$abs_path" "$HOME/.claude/skills/$name"
-        echo "  ✅ $name"
-    done
-    echo "Done. Skills are now available globally."
+    REPO="$(pwd)"
+    ROOT="$HOME/.claude/aperture"
+    SHARED="$ROOT/shared"
 
-# Verify skills are present in .claude/skills/
-check-skills:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "🔍 Checking Aperture skills..."
-    skills_dir=".claude/skills"
-    if [ -d "$skills_dir" ]; then
-        count=0
-        for d in "$skills_dir"/*/; do
-            if [ -f "${d}SKILL.md" ] || [ -f "${d}skill.md" ]; then
-                name=$(basename "$d")
-                echo "     • $name"
-                count=$((count + 1))
-            fi
+    echo "🔧 Building Aperture runtime tree at $ROOT"
+    echo
+
+    # 1) Wipe any stale agent dirs (NOT shared/, which we rebuild below).
+    if [ -d "$ROOT" ]; then
+        for d in "$ROOT"/*/; do
+            [ -d "$d" ] || continue
+            name=$(basename "$d")
+            [ "$name" = "shared" ] && continue
+            rm -rf "$d"
         done
-        echo "  📄 Skills found: $count"
-        if [ "$count" -eq 0 ]; then
-            echo "  ❌ No skills found in $skills_dir/"
-            exit 1
-        else
-            echo "  ✅ Skills OK"
+    fi
+    mkdir -p "$SHARED"
+
+    # 2) Repopulate shared/ with one symlink per skill in .claude/skills/.
+    echo "── Shared skills"
+    rm -rf "$SHARED"
+    mkdir -p "$SHARED"
+    count=0
+    for skill_dir in "$REPO"/.claude/skills/*/; do
+        [ -d "$skill_dir" ] || continue
+        name=$(basename "$skill_dir")
+        ln -sfn "$skill_dir" "$SHARED/$name"
+        echo "  • $name"
+        count=$((count + 1))
+    done
+    echo "  ✅ $count skills linked into shared/"
+    echo
+
+    # 3) For each agent in agents/<name>/, build the runtime folder.
+    echo "── Agents"
+    agent_count=0
+    for agent_dir in "$REPO"/agents/*/; do
+        [ -d "$agent_dir" ] || continue
+        name=$(basename "$agent_dir")
+        manifest="$agent_dir/manifest.json"
+        skills_txt="$agent_dir/skills.txt"
+        prompt_src="$REPO/prompts/$name.md"
+
+        if [ ! -f "$manifest" ]; then
+            echo "  ⚠️  $name: missing manifest.json — skipped"
+            continue
         fi
-    else
-        echo "  ❌ Skills directory not found: $skills_dir/"
+        if [ ! -f "$prompt_src" ]; then
+            echo "  ⚠️  $name: missing prompts/$name.md — skipped"
+            continue
+        fi
+
+        agent_root="$ROOT/$name"
+        mkdir -p "$agent_root/skills"
+        ln -sfn "$manifest" "$agent_root/manifest.json"
+        ln -sfn "$prompt_src" "$agent_root/prompt.md"
+
+        # Wire up each requested skill as a symlink into shared/.
+        skill_list=""
+        if [ -f "$skills_txt" ]; then
+            while IFS= read -r line; do
+                skill=$(echo "$line" | sed 's/#.*//' | xargs || true)
+                [ -z "$skill" ] && continue
+                if [ ! -e "$SHARED/$skill" ]; then
+                    echo "  ⚠️  $name → unknown skill '$skill' (not in .claude/skills/)"
+                    continue
+                fi
+                ln -sfn "$SHARED/$skill" "$agent_root/skills/$skill"
+                skill_list="$skill_list $skill"
+            done < "$skills_txt"
+        fi
+        echo "  • $name:$skill_list"
+        agent_count=$((agent_count + 1))
+    done
+    echo "  ✅ $agent_count agents wired"
+    echo
+    echo "Done. Aperture will load from $ROOT on next launch."
+
+# Verify the runtime tree is sane.
+check-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ROOT="$HOME/.claude/aperture"
+    if [ ! -d "$ROOT" ]; then
+        echo "  ❌ $ROOT does not exist — run: just setup"
         exit 1
     fi
+    echo "🔍 Checking $ROOT"
+    fail=0
+    for agent_dir in "$ROOT"/*/; do
+        name=$(basename "$agent_dir")
+        [ "$name" = "shared" ] && continue
+        if [ ! -e "$agent_dir/manifest.json" ]; then
+            echo "  ❌ $name: manifest.json missing or broken symlink"
+            fail=1
+        elif [ ! -e "$agent_dir/prompt.md" ]; then
+            echo "  ❌ $name: prompt.md missing or broken symlink"
+            fail=1
+        else
+            skill_count=$(find "$agent_dir/skills" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
+            echo "  ✅ $name ($skill_count skills)"
+        fi
+    done
+    [ "$fail" = "0" ] && echo "  ✅ runtime tree OK" || exit 1
 
 # ============== BEADS ==============
 
@@ -128,8 +199,8 @@ status:
     echo "📊 Aperture System Status"
     echo "========================="
     echo ""
-    echo "── Skills ──"
-    just check-skills
+    echo "── Runtime tree ──"
+    just check-setup
     echo ""
     echo "── MCP Server ──"
     just check-mcp

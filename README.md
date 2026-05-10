@@ -167,14 +167,29 @@ just status
 
 ## Skills
 
-Aperture skills are markdown files under `.claude/skills/` that get injected into agent system prompts at session start. Each agent has its own skill manifest at `~/.claude/agents/<agent>/skills.txt` listing which skills to load.
+Aperture skills are markdown files under `.claude/skills/<skill>/SKILL.md`. As of v1.0 they are loaded via a **folder-driven runtime tree** at `~/.claude/aperture/`:
+
+```
+~/.claude/aperture/
+├── <agent>/
+│   ├── manifest.json   → repo agents/<agent>/manifest.json
+│   ├── prompt.md       → repo prompts/<agent>.md
+│   └── skills/
+│       └── <skill>     → repo .claude/skills/<skill>/  (via shared/)
+└── shared/
+    └── <skill>         → repo .claude/skills/<skill>/
+```
+
+The repo holds canonical sources (`agents/<name>/{manifest.json, skills.txt}`, `prompts/<name>.md`, `.claude/skills/<skill>/`). Run `just setup` to (re)build the runtime tree from those sources — it's idempotent. Adding/removing a skill or agent never requires a recompile; only `just setup`.
 
 | Skill | Purpose |
 |-------|---------|
 | `communicate` | Inter-agent messaging patterns, status reports |
 | `task-workflow` | BEADS task lifecycle (claim → work → artifact → close) |
-| `subagents` | Subagent delegation patterns (Agent tool, parallel invocations) — primarily for GLaDOS |
 | `team` | Agent roster and routing reference |
+| `project-labels` | BEADS `project:<name>` taxonomy (every task carries one) |
+| `subagents` | Subagent delegation patterns (Agent tool, parallel invocations) — primarily for GLaDOS |
+| `worktree-discipline` | Per-task git worktree convention for senior monorepo-incluir agents |
 | `deploy-workflow` | End-to-end deployment pipeline |
 | `dokploy-api` | Dokploy REST API reference |
 | `codex-comms` | `@@BEADS@@` protocol for Codex agents |

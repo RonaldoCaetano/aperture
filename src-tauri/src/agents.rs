@@ -304,47 +304,30 @@ pub fn update_agent_model(
     Ok(())
 }
 
+/// Read every skill under `~/.claude/aperture/<agent>/skills/` and append its
+/// contents to the prompt. Skills are loaded in deterministic alphabetical
+/// order (see `agent_loader::load_agent_skills`). The on-disk layout is built
+/// by `just setup`; the canonical sources live in the repo at
+/// `agents/<name>/skills.txt` and `.claude/skills/<name>/`.
 pub fn inject_skills(mut prompt: String, agent_name: &str) -> String {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-    let skills_dir = format!("{}/.claude/skills", home);
-    let agents_dir = format!("{}/.claude/agents", home);
-
-    // Read agent-specific skills.txt, fall back to _default/skills.txt
-    let manifest_path = format!("{}/{}/skills.txt", agents_dir, agent_name);
-    let default_path = format!("{}/_default/skills.txt", agents_dir);
-
-    let manifest = fs::read_to_string(&manifest_path)
-        .or_else(|_| fs::read_to_string(&default_path))
-        .unwrap_or_default();
-
-    let skill_names: Vec<&str> = manifest
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty() && !l.starts_with('#'))
-        .collect();
-
-    if skill_names.is_empty() {
-        eprintln!("[aperture] warn: no skills found for agent '{}'", agent_name);
+    let skills = crate::agent_loader::load_agent_skills(agent_name);
+    if skills.is_empty() {
+        eprintln!(
+            "[aperture] warn: no skills found for agent '{}' under \
+             ~/.claude/aperture/{}/skills/ — did you run `just setup`?",
+            agent_name, agent_name
+        );
         return prompt;
     }
-
-    eprintln!("[aperture] loading {} skills for '{}': {:?}", skill_names.len(), agent_name, skill_names);
-
-    for skill_name in &skill_names {
-        let base = format!("{}/{}", skills_dir, skill_name);
-        let skill_file = ["SKILL.md", "skill.md"]
-            .iter()
-            .map(|n| format!("{}/{}", base, n))
-            .find(|p| std::path::Path::new(p).exists());
-        match skill_file {
-            Some(path) => match fs::read_to_string(&path) {
-                Ok(content) => {
-                    prompt.push_str(&format!("\n\n---\n# Skill: {}\n\n{}", skill_name, content));
-                }
-                Err(e) => eprintln!("[aperture] warn: could not read skill '{}': {}", skill_name, e),
-            },
-            None => eprintln!("[aperture] warn: skill '{}' not found in {}", skill_name, skills_dir),
-        }
+    let names: Vec<&str> = skills.iter().map(|(n, _)| n.as_str()).collect();
+    eprintln!(
+        "[aperture] loading {} skills for '{}': {:?}",
+        skills.len(),
+        agent_name,
+        names
+    );
+    for (skill_name, content) in skills {
+        prompt.push_str(&format!("\n\n---\n# Skill: {}\n\n{}", skill_name, content));
     }
     prompt
 }

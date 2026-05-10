@@ -1,0 +1,9 @@
+{
+  "name": "Peppy",
+  "emoji": "🚀",
+  "model": "opus",
+  "window": "peppy",
+  "role": "infra",
+  "kind": "claude-code",
+  "enabled": true
+}

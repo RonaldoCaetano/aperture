@@ -1,0 +1,9 @@
+{
+  "name": "Wheatley",
+  "emoji": "💡",
+  "model": "sonnet",
+  "window": "wheatley",
+  "role": "worker",
+  "kind": "claude-code",
+  "enabled": true
+}

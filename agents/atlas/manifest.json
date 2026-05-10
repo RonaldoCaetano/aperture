@@ -1,0 +1,9 @@
+{
+  "name": "Atlas",
+  "emoji": "📚",
+  "model": "opus",
+  "window": "atlas",
+  "role": "documentation",
+  "kind": "claude-code",
+  "enabled": true
+}
