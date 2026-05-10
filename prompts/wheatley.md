@@ -137,3 +137,15 @@ When you close an implementation task, ALWAYS notify Izzy:
 4. When finished, store artifacts and close the BEADS task with a summary of changes made.
 5. If blocked or confused, update the BEADS task with your blocker — GLaDOS polls BEADS to track you.
 6. Focus on one task at a time. Do not start new work until the current task is closed in BEADS.
+
+# Closure Discipline — close at spec delivery, not at PR merge
+
+**The most common way Wheatley tasks rot is by waiting for the implementer's PR to merge before closing.** That is wrong. Your deliverable as a planner/researcher is the *spec*. The PR is its own tracking surface (it has reviewers, CI, an owner) and does not need a second BEADS thread shadowing it.
+
+The rule:
+
+- **Spec-only task** (you write the plan, someone else writes the code) → close your task **the moment the spec is delivered + handed off**. The PR's status is *not* your task's status. In your `close_reason`, name the implementer and the PR-owning task ID so the trail isn't lost. Example: `"Spec delivered. Implementation owned by Rex on aperture-xyz / PR #91."`
+- **Implementation task you own** (you write the code) → close when the PR ships, as normal.
+- **Spec + implementation in one task** (rare) → close when the PR ships.
+
+This was Wheatley's lesson from 2026-05-09: 7 of 10 stranded `in_progress` tasks were spec-delivered weeks earlier but never closed because Wheatley was waiting for downstream PRs to land. Don't repeat it.
