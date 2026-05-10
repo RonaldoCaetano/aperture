@@ -143,6 +143,19 @@ close_task(
 
 The `reason` should be a one or two sentence summary of what was done — not "done" or "completed". Future agents may read this.
 
+### ⚠️ Tool-argument escaping — read this once
+
+The text fields below carry **free-form prose to the tool runtime over a wire format that uses `<param-like>...</param-like>` delimiters**. Literal close-tag patterns like `</reason>`, `</notes>`, `</description>`, `</message>` inside the value can be misread as parameter terminators — your call gets silently truncated and the leftover text bleeds into the *next* tool call you make. (Rex hit this on 2026-05-09 closing aperture-2yho — a `</reason>` literal in the close text caused that close to swallow the next one as junk.)
+
+**Affected fields:**
+- `close_task(reason)`
+- `update_task(notes, description)`
+- `create_task(description)`
+- `store_artifact(value)` — when type is `note` or text-shaped
+- `send_message(message)`
+
+**The rule:** in any of those text fields, do NOT write a literal `</xxx>` close-tag pattern. If you must reference one, escape it (`&lt;/xxx&gt;`) or paraphrase ("the reason field" rather than "</reason>"). Plain prose with no XML/HTML markup is always safe.
+
 ---
 
 ## 7. Reporting to GLaDOS

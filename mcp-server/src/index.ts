@@ -36,7 +36,7 @@ function requireRole(required: string): void {
 server.tool(
   "send_message",
   "Send a message to another agent or the human operator. Valid recipients: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator, plus any active spiderlings. Use 'operator' to reach the human.",
-  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator, or a spiderling name"), message: z.string().describe("Message content") },
+  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator, or a spiderling name"), message: z.string().describe("Message content. NOTE: avoid literal XML/HTML close-tag patterns like `</message>`, `</reason>` inside the body — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase.") },
   async ({ to, message }) => {
     const target = to.toLowerCase().trim();
 
@@ -157,7 +157,7 @@ server.tool(
   {
     title: z.string().describe("Task title"),
     priority: z.number().min(0).max(4).describe("Priority 0-4 (0 = highest)"),
-    description: z.string().optional().describe("Task description"),
+    description: z.string().optional().describe("Task description. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>`, `</description>` inside the text — the tool-argument wire format can misinterpret them as parameter terminators, causing argument truncation. If you must reference such tags, use `&lt;/reason&gt;` or paraphrase (e.g. \"the reason field\")."),
   },
   async ({ title, priority, description }) => {
     try {
@@ -176,8 +176,8 @@ server.tool(
     id: z.string().describe("Task ID (e.g. bd-a1b2)"),
     claim: z.boolean().optional().describe("Claim this task for yourself"),
     status: z.string().optional().describe("New status"),
-    description: z.string().optional().describe("New description"),
-    notes: z.string().optional().describe("Append notes"),
+    description: z.string().optional().describe("New description. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
+    notes: z.string().optional().describe("Append notes. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
   },
   async ({ id, claim, status, description, notes }) => {
     try {
@@ -199,7 +199,7 @@ server.tool(
   "Close a BEADS task with a reason.",
   {
     id: z.string().describe("Task ID"),
-    reason: z.string().describe("Reason for closing"),
+    reason: z.string().describe("Reason for closing. CRITICAL: do NOT include literal XML/HTML close-tag patterns like `</reason>`, `</notes>`, `</close>` inside this text — the tool-argument wire format treats them as parameter terminators, which causes the rest of your tool call to be silently swallowed and bleed into the next call. If you need to reference such a tag, escape it (`&lt;/reason&gt;`) or paraphrase (e.g. \"the reason field\"). Plain prose is always safe."),
   },
   async ({ id, reason }) => {
     try {
@@ -235,7 +235,7 @@ server.tool(
   {
     task_id: z.string().describe("Task ID to attach artifact to"),
     type: z.enum(["file", "pr", "session", "url", "note"]).describe("Artifact type"),
-    value: z.string().describe("Artifact value (path, URL, or text)"),
+    value: z.string().describe("Artifact value (path, URL, or text). NOTE: avoid literal XML/HTML close-tag patterns like `</value>`, `</note>` inside text artifacts — they can be misread as parameter terminators. Use `&lt;/...&gt;` or paraphrase."),
   },
   async ({ task_id, type, value }) => {
     try {
