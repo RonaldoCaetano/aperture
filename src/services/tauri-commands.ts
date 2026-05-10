@@ -1,9 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { AgentDef } from "../types";
 
-// Frontend-exposed Tauri commands. The launcher only needs five things:
-// bootstrap the tmux session, list/start/stop/configure agents, and clear
-// an agent's attention badge once the operator has acknowledged it.
+export interface VersionInfo {
+  semver: string;
+  sha: string;
+  built_at: string;
+}
+
+// Frontend-exposed Tauri commands. The launcher only needs a handful of
+// things: bootstrap the tmux session, list/start/stop/configure agents,
+// clear an agent's attention badge, and read build metadata for the footer.
 export const commands = {
   tmuxCreateSession: (sessionName: string) =>
     invoke<string>("tmux_create_session", { sessionName }),
@@ -16,4 +22,5 @@ export const commands = {
     invoke<void>("update_agent_model", { name, model }),
   clearAttention: (name: string) =>
     invoke<void>("clear_attention", { name }),
+  getVersion: () => invoke<VersionInfo>("get_version"),
 };

@@ -1,4 +1,4 @@
-use crate::state::{AgentDef, AppState, SpiderlingDef};
+use crate::state::{AgentDef, AppState};
 use std::collections::HashMap;
 
 pub fn load_agent_overrides(home: &str) -> HashMap<String, String> {
@@ -180,17 +180,6 @@ pub fn default_agents(project_dir: &str) -> HashMap<String, AgentDef> {
     agents
 }
 
-fn load_spiderlings(home: &str) -> HashMap<String, SpiderlingDef> {
-    let path = format!("{}/.aperture/active-spiderlings.json", home);
-    match std::fs::read_to_string(&path) {
-        Ok(data) => {
-            let list: Vec<SpiderlingDef> = serde_json::from_str(&data).unwrap_or_default();
-            list.into_iter().map(|s| (s.name.clone(), s)).collect()
-        }
-        Err(_) => HashMap::new(),
-    }
-}
-
 pub fn default_state() -> AppState {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
     // CARGO_MANIFEST_DIR is src-tauri/, so parent is the project root
@@ -211,7 +200,6 @@ pub fn default_state() -> AppState {
     AppState {
         tmux_session: "aperture".into(),
         agents,
-        spiderlings: load_spiderlings(&home),
         mcp_server_path: format!("{}/mcp-server/dist/index.js", project_dir),
         db_path: format!("{}/.aperture/messages.db", home),
         project_dir,

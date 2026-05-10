@@ -19,7 +19,7 @@ Plan → Build → Push → Handoff → Deploy → Verify → Report
 |-------|-------|-------------|
 | **Plan** | Wheatley | Writes spec with scope, acceptance criteria, deploy details. Submits to GLaDOS. |
 | **Approve** | GLaDOS | Reviews plan. Approves, requests changes, or rejects. |
-| **Build** | GLaDOS (or spiderling) | Scaffolds the app, writes code, creates Dockerfile + docker-compose.yml. |
+| **Build** | GLaDOS (or subagent / specialist) | Scaffolds the app, writes code, creates Dockerfile + docker-compose.yml. |
 | **Push** | Builder | Pushes to GitHub on `main` branch. Verifies branch exists with `git ls-remote`. |
 | **Handoff** | Builder → Peppy | Sends structured deploy spec (see format below). |
 | **Deploy** | Peppy | Creates Dokploy compose service, configures domain, triggers deploy via API. |
@@ -32,7 +32,7 @@ Plan → Build → Push → Handoff → Deploy → Verify → Report
 
 **GLaDOS (Orchestrator)**
 - Reviews and approves all plans before execution
-- Decides execution strategy: code it herself, spawn spiderlings, or delegate
+- Decides execution strategy: code it herself, dispatch subagents via the Agent tool, or delegate to a specialist
 - Handles scaffolding and code when appropriate
 - Enforces quality gates and handoff standards
 - Coordinates the full pipeline

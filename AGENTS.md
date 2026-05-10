@@ -105,14 +105,14 @@ Each agent has a distinct specialization. Stay in your lane; cross-agent delegat
 
 | Agent | Lane | Responsibilities |
 |-------|------|-----------------|
-| **GLaDOS** | Orchestration | Task delegation, spiderling spawning, cross-agent consistency, architectural decisions |
+| **GLaDOS** | Orchestration | Task delegation (specialists or subagents), cross-agent consistency, architectural decisions |
 | **Wheatley** | Implementation | Code writing, file editing, bug fixing, feature implementation |
 | **Peppy** | Infrastructure | Docker, deployments, services, environment management, CI/CD, health monitoring |
 | **Izzy** | Testing & QA | Writing tests, running test suites, code review, regression catching, quality gates |
 
 **Task creation rules:**
 - Any agent can create BEADS tasks for work they discover mid-flight (self-assigned)
-- Only GLaDOS assigns tasks to other agents and spawns spiderlings
+- Only GLaDOS assigns tasks to other agents and dispatches subagents via the Agent tool
 - Cross-agent delegation always flows through GLaDOS
 
 ## Pre-loaded Skills
@@ -120,10 +120,9 @@ Each agent has a distinct specialization. Stay in your lane; cross-agent delegat
 Every agent auto-loads these skills on session start:
 - `aperture:communicate` — messaging patterns, status reports, infra handoffs
 - `aperture:task-workflow` — BEADS lifecycle (claim → work → artifact → close)
-- `aperture:war-room` — war room participation protocol
 
 Domain-specific skills:
-- **GLaDOS** additionally loads: `aperture:spiderling`
+- **GLaDOS** additionally loads: `aperture:subagents` (Agent-tool delegation patterns)
 - **Peppy** additionally loads: (future infra skill)
 - **Izzy** additionally loads: (future testing skill)
 

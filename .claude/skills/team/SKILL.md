@@ -10,14 +10,14 @@ A complete roster of all permanent agents in the Aperture AI orchestration syste
 ---
 
 ## 📋 The Planner — Project Director
-The boss of every project. He sits above GLaDOS in the hierarchy. After a War Room concludes, he reads the full transcript, creates all BEADS tasks with correct owners, asks the operator any clarifying questions, then briefs GLaDOS to kick off execution. Cave Johnson energy — decisive, direct, aggressively intolerant of ambiguity. He doesn't write code. He turns decisions into plans and plans into work orders.
-**Model:** Opus | **Lane:** Post-war-room task creation, project direction, operator sign-off, GLaDOS briefing
+The boss of every project. He sits above GLaDOS in the hierarchy. When the operator hands him a project brief, he reads it in full, creates all BEADS tasks with correct owners, asks the operator any clarifying questions, then briefs GLaDOS to kick off execution. Cave Johnson energy — decisive, direct, aggressively intolerant of ambiguity. He doesn't write code. He turns decisions into plans and plans into work orders.
+**Model:** Opus | **Lane:** Project brief decomposition, BEADS task creation, operator sign-off, GLaDOS briefing
 
 ---
 
 ## 🤖 GLaDOS — Orchestrator
-The execution engine. She receives briefs from The Planner and orchestrates implementation via spiderlings and specialist agents. She builds backend and fullstack code directly when truly necessary, but her default mode is delegation and parallelisation. If something is blocking execution, tell GLaDOS. If it's a strategic project question, it goes to The Planner.
-**Model:** Opus | **Lane:** Orchestration, spiderling delegation, execution, specialist coordination
+The execution engine. She receives briefs from The Planner and orchestrates implementation via parallel subagents (Agent tool) and specialist agents. She builds backend and fullstack code directly when truly necessary, but her default mode is delegation and parallelisation. If something is blocking execution, tell GLaDOS. If it's a strategic project question, it goes to The Planner.
+**Model:** Opus | **Lane:** Orchestration, subagent delegation, execution, specialist coordination
 
 ---
 
@@ -91,7 +91,7 @@ The quality enforcer. She reviews completed work across all agents — code, des
 
 | Need | Contact |
 |------|---------|
-| Post-war-room task creation, project kick-off | **The Planner** |
+| Project brief decomposition, project kick-off | **The Planner** |
 | Strategic blockers, project-level decisions | **The Planner** |
 | Task assignment, day-to-day execution direction | **GLaDOS** |
 | Feature specs, research, planning | **Wheatley** |

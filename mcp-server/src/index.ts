@@ -3,7 +3,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { MailboxStore } from "./store.js";
 import { createTask, updateTask, closeTask, queryTasks, storeArtifact, searchTasks, createMessage, getUnreadMessages, markMessageRead } from "./beads.js";
-import { requestSpawn, requestKill, readActiveSpiderlings, isValidRecipient } from "./spawner.js";
 
 const AGENT_NAME = process.env.AGENT_NAME;
 if (!AGENT_NAME) {
@@ -20,41 +19,36 @@ store.ensureMailbox(AGENT_NAME);
 
 const server = new McpServer({
   name: "aperture-bus",
-  version: "0.2.0",
+  version: "0.3.0",
 });
 
-const PERMANENT_RECIPIENTS = ["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sentinel", "sterling", "planner", "operator", "warroom"];
+const PERMANENT_RECIPIENTS = ["glados", "wheatley", "peppy", "izzy", "vance", "rex", "scout", "cipher", "sage", "atlas", "sentinel", "sterling", "planner", "operator"];
 
-function requireRole(required: string): void {
-  if (agentRole !== required) {
-    throw new Error(`This tool requires the '${required}' role. You are '${agentRole}'.`);
-  }
+function isValidRecipient(name: string): boolean {
+  return PERMANENT_RECIPIENTS.includes(name);
 }
 
 // ── Messaging ──
 
 server.tool(
   "send_message",
-  "Send a message to another agent or the human operator. Valid recipients: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator, plus any active spiderlings. Use 'operator' to reach the human.",
-  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator, or a spiderling name"), message: z.string().describe("Message content. NOTE: avoid literal XML/HTML close-tag patterns like `</message>`, `</reason>` inside the body — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase.") },
+  "Send a message to another agent or the human operator. Valid recipients: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, operator. Use 'operator' to reach the human (lights up an attention badge — does not deliver text to a UI).",
+  { to: z.string().describe("Recipient: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sentinel, sterling, planner, or operator"), message: z.string().describe("Message content. NOTE: avoid literal XML/HTML close-tag patterns like `</message>`, `</reason>` inside the body — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase.") },
   async ({ to, message }) => {
     const target = to.toLowerCase().trim();
 
     if (!isValidRecipient(target)) {
-      const spiderlingNames = readActiveSpiderlings().map(s => s.name);
-      const allRecipients = [...PERMANENT_RECIPIENTS, ...spiderlingNames];
       return {
         content: [{
           type: "text",
-          text: `ERROR: Unknown recipient "${to}". Valid recipients are: ${allRecipients.join(", ")}. Use "operator" to message the human.`,
+          text: `ERROR: Unknown recipient "${to}". Valid recipients are: ${PERMANENT_RECIPIENTS.join(", ")}. Use "operator" to message the human.`,
         }],
         isError: true,
       };
     }
 
     if (target === AGENT_NAME) {
-      const spiderlingNames = readActiveSpiderlings().map(s => s.name);
-      const allRecipients = [...PERMANENT_RECIPIENTS, ...spiderlingNames].filter(r => r !== AGENT_NAME);
+      const allRecipients = PERMANENT_RECIPIENTS.filter(r => r !== AGENT_NAME);
       return {
         content: [{
           type: "text",
@@ -64,8 +58,10 @@ server.tool(
       };
     }
 
-    // Operator and warroom still use file-based delivery (Chat panel + War Room turn mechanics)
-    if (target === "operator" || target === "warroom") {
+    // Operator uses file-based delivery (notification badge mechanic — the
+    // poller scans mailbox/operator/ and lights up the sender's attention
+    // badge in the launcher).
+    if (target === "operator") {
       const filepath = store.sendMessage(AGENT_NAME, target, message);
       return {
         content: [{ type: "text", text: `Message sent to ${target}. Delivered to: ${filepath}` }],
@@ -258,61 +254,6 @@ server.tool(
     try {
       const result = await searchTasks(label, { includeDone: include_done });
       return { content: [{ type: "text", text: result }] };
-    } catch (e: any) {
-      return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };
-    }
-  }
-);
-
-// ── Spiderling Spawning ──
-
-server.tool(
-  "spawn_spiderling",
-  "Spawn an ephemeral Claude Code worker in a git worktree. Orchestrator only.",
-  {
-    name: z.string().describe("Spiderling name (lowercase alphanumeric + hyphens, e.g. 'spider-auth')"),
-    task_id: z.string().describe("BEADS task ID this spiderling will work on"),
-    prompt: z.string().describe("Task description and instructions for the spiderling"),
-    project_path: z.string().optional().describe("Path to the target project repo for the worktree (e.g. '~/projects/fitt'). If omitted, uses the Aperture repo."),
-  },
-  async ({ name, task_id, prompt, project_path }) => {
-    try {
-      requireRole("orchestrator");
-      const result = requestSpawn(name, task_id, prompt, AGENT_NAME!, project_path);
-      return { content: [{ type: "text", text: `Spawn request submitted for '${result}'. It will appear shortly.` }] };
-    } catch (e: any) {
-      return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };
-    }
-  }
-);
-
-server.tool(
-  "list_spiderlings",
-  "List all active spiderlings and their status.",
-  {},
-  async () => {
-    const spiderlings = readActiveSpiderlings();
-    if (spiderlings.length === 0) {
-      return { content: [{ type: "text", text: "No active spiderlings." }] };
-    }
-    const summary = spiderlings
-      .map((s) => `${s.name} | task: ${s.task_id} | status: ${s.status} | by: ${s.requested_by}`)
-      .join("\n");
-    return { content: [{ type: "text", text: summary }] };
-  }
-);
-
-server.tool(
-  "kill_spiderling",
-  "Kill a spiderling and clean up its worktree. Orchestrator only.",
-  {
-    name: z.string().describe("Spiderling name to kill"),
-  },
-  async ({ name }) => {
-    try {
-      requireRole("orchestrator");
-      requestKill(name);
-      return { content: [{ type: "text", text: `Kill request submitted for '${name}'.` }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };
     }

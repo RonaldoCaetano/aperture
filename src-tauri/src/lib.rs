@@ -3,12 +3,23 @@ mod beads_parser;
 mod codex_harness;
 mod config;
 mod poller;
-mod spawner;
 mod state;
 mod tmux;
-mod warroom;
 
 use std::sync::{Arc, Mutex};
+
+/// Returns the version metadata baked into this binary at build time.
+/// Three fields: semver from Cargo.toml, short git SHA, and the UTC build
+/// date. The launcher footer renders this as `vX.Y.Z · sha · YYYY-MM-DD` so
+/// the operator can verify a reinstall actually picked up the latest commit.
+#[tauri::command]
+fn get_version() -> serde_json::Value {
+    serde_json::json!({
+        "semver": env!("CARGO_PKG_VERSION"),
+        "sha": env!("APERTURE_GIT_SHA"),
+        "built_at": env!("APERTURE_BUILD_DATE"),
+    })
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -77,6 +88,8 @@ pub fn run() {
             // (used by AgentCard click → switch to that agent's window).
             tmux::tmux_create_session,
             tmux::tmux_select_window,
+            // Build metadata for the launcher footer (semver + git SHA + build date)
+            get_version,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

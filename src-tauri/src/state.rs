@@ -17,24 +17,9 @@ pub struct AgentDef {
     pub attention: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SpiderlingDef {
-    pub name: String,
-    pub task_id: String,
-    pub tmux_window_id: Option<String>,
-    pub worktree_path: String,
-    pub worktree_branch: String,
-    #[serde(default)]
-    pub source_repo: Option<String>,
-    pub requested_by: String,
-    pub status: String,
-    pub spawned_at: String,
-}
-
 pub struct AppState {
     pub tmux_session: String,
     pub agents: HashMap<String, AgentDef>,
-    pub spiderlings: HashMap<String, SpiderlingDef>,
     pub mcp_server_path: String,
     /// Vestigial — kept so we don't have to thread a removal through
     /// `default_state`. Was used by an older message DB; today the message

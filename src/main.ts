@@ -1,6 +1,7 @@
 import "./style.css";
 import { createNavbar } from "./components/Navbar";
 import { createAgentList } from "./components/AgentList";
+import { createFooter } from "./components/Footer";
 import { commands } from "./services/tauri-commands";
 
 const SESSION_NAME = "aperture";
@@ -8,6 +9,7 @@ const SESSION_NAME = "aperture";
 async function init() {
   const navbarTitle = document.getElementById("navbar-title")!;
   const sidebarAgents = document.getElementById("sidebar-agents")!;
+  const sidebarFooter = document.getElementById("sidebar-footer")!;
 
   // Top-of-sidebar logo + connection dot.
   const navbar = createNavbar(navbarTitle);
@@ -26,6 +28,10 @@ async function init() {
 
   // The agent launcher — the only feature the panel offers.
   const agentList = createAgentList(sidebarAgents);
+
+  // Bottom-of-sidebar version line (semver · git SHA · build date).
+  // Fire-and-forget: if it fails the launcher still works.
+  void createFooter(sidebarFooter);
 
   // Refresh status + attention badges every 3s.
   setInterval(() => agentList.refresh(), 3000);

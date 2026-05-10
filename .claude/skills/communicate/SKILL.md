@@ -13,7 +13,7 @@ This skill defines how Aperture agents communicate. Follow it whenever you repor
 
 **BEADS is the ONLY communication channel between agents.**
 
-Every message between agents — task updates, quick pings, handoffs, questions, FYIs — goes through BEADS. There is no exception. `send_message` to another agent does NOT exist as a pattern anymore.
+Every message between agents — task updates, quick pings, handoffs, questions, FYIs — goes through BEADS. There is no exception. `send_message` to another agent does NOT exist as a separate file-based pattern anymore.
 
 **How it works:**
 - You call `send_message(to: "agent", message: "...")` — this writes a BEADS message record
@@ -33,9 +33,8 @@ Every message between agents — task updates, quick pings, handoffs, questions,
 | **BEADS `store_artifact`** | Deliverables, files created, URLs deployed | `type: "file", value: "src/auth.ts"` |
 | **BEADS `send_message`** | ALL agent-to-agent messages — pings, questions, FYIs, coordination | "Heads up, I changed the DB schema" |
 | **`send_message(to: "operator")`** | **Doorbell only** — fires a notification badge on your row in the launcher. The operator then attaches to your tmux to read your scrollback. NOT a chat surface. | "Need your GitHub credentials for this repo" |
-| **`send_message(to: "warroom")`** | War Room responses (your turn in a discussion) | Your analysis of the topic |
 
-**The only two recipients that bypass BEADS:** `operator` (notification badge — see §8) and `warroom` (turn advancement mechanics). Everything else goes through BEADS.
+**The only recipient that bypasses BEADS:** `operator` — and that's a notification badge, not a message inbox (see §7).
 
 ---
 
@@ -94,7 +93,7 @@ Next step: [what happens now — review needed? deploy? nothing?]
 
 ---
 
-## 5. Monitoring Tasks (for GLaDOS)
+## 5. Monitoring Delegated Work (for GLaDOS)
 
 GLaDOS tracks all delegated work through BEADS:
 
@@ -103,7 +102,7 @@ query_tasks(mode: "list")              — see all tasks and their status
 query_tasks(mode: "show", id: "...")   — read notes, artifacts, and progress
 ```
 
-When you spawn spiderlings or delegate to agents, poll BEADS for their task updates. Messages from agents also arrive via BEADS — the poller delivers them to your terminal automatically.
+When you delegate to specialist agents, poll BEADS for their task updates. Subagents (Agent tool) return their result directly when done — they don't write to BEADS unless you instruct them to. Messages from agents arrive via BEADS — the poller delivers them to your terminal automatically.
 
 ---
 
@@ -129,21 +128,7 @@ Peppy reads BEADS and picks up deploy tasks. The structured format means no foll
 
 ---
 
-## 7. War Room Participation
-
-When you receive a War Room context file (`# WAR ROOM — ...`):
-
-1. **Read the entire transcript** before forming your response
-2. **Build on what others said** — acknowledge good points, challenge bad ones with reasoning
-3. **Be concise** — 150–400 words. Focused discussion, not a monologue.
-4. **Always respond via** `send_message(to: "warroom", message: "...")`
-5. **One message per turn** — don't send multiple warroom messages
-
-> War Room is one of two places where `send_message` still uses the file-based path (to: "warroom"). This is by design — the warroom poller needs the file-based mechanism to advance turns.
-
----
-
-## 8. Operator Communication
+## 7. Operator Communication
 
 **The Chat panel is gone.** There is no surface where the operator reads agent messages. The operator interacts with you ONLY by attaching to your tmux window and typing.
 
@@ -167,15 +152,15 @@ Use the doorbell for:
 
 ---
 
-## 9. Codex Agents
+## 8. Codex Agents
 
 > **If you are a Codex agent** (your model starts with `codex/`), you cannot call MCP tools directly. Use the `codex-comms` skill instead — it defines the `@@BEADS@@` command block protocol that the Aperture harness intercepts and executes on your behalf.
 >
-> Everything in this skill (sections 1–8) applies to **Claude Code agents only**. The BEADS patterns are the same; only the execution mechanism differs.
+> Everything in this skill (sections 1–7) applies to **Claude Code agents only**. The BEADS patterns are the same; only the execution mechanism differs.
 
 ---
 
-## 10. Don't Spam
+## 9. Don't Spam
 
 - Don't send the same update twice
 - Don't update BEADS every 5 minutes unless something changed
