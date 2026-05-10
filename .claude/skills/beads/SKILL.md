@@ -30,7 +30,7 @@ A well-shaped task is the difference between work that flows and work that stall
 | `task` | Default. A discrete work item — implement, document, refactor, configure |
 | `bug` | Something is broken and needs fixing |
 | `feature` | New user-facing capability |
-| `epic` | Large work composed of multiple sub-tasks (use `--deps blocks:` to link children) |
+| `epic` | Large work composed of multiple sub-tasks — a container bead. See §3 (Epics — When and How) for filing, dep wiring, and close rules. Do NOT use `--deps blocks:` toward children. |
 | `chore` | Maintenance — dependency bumps, tooling, build config, no behaviour change |
 
 ### Priority (`-p` / `--priority`)
@@ -56,7 +56,7 @@ A well-shaped task is the difference between work that flows and work that stall
 
 Concrete, testable conditions that define "done." Write these **before work starts** so completion isn't subjective.
 
-For repo work, "done" means **PR opened with the change implemented** — not merged. See the closing rule in section 3.
+For repo work, "done" means **PR opened with the change implemented** — not merged. See the closing rule in section 4.
 
 ✅ Good acceptance criteria:
 - "User can select a date in the UI"
@@ -72,7 +72,7 @@ For repo work, "done" means **PR opened with the change implemented** — not me
 | Dep type | Meaning |
 |----------|---------|
 | `blocked-by:<id>` | This task can't start until `<id>` is closed |
-| `blocks:<id>` | This task must finish before `<id>` can start (mostly for epics → subtasks) |
+| `blocks:<id>` | This task must finish before `<id>` can start. Note: for the epic-to-child direction, **use neither `blocks:` nor `blocked-by:` from the child toward the epic — see §3**. Both naive directions create a deadlock. |
 | `related:<id>` | Context only — not a hard ordering constraint |
 | `discovered-from:<id>` | Found while doing `<id>`; preserves provenance |
 
@@ -128,7 +128,118 @@ A task that genuinely spans projects gets the **primary** project label. Cross-p
 
 ---
 
-## 3. The Lifecycle
+## 3. Epics — When and How
+
+Most BEADS work is filed as `type: task`. But some work — multi-session initiatives, project briefs, things that touch more than one specialist agent — is bigger than a task. That is an **epic**: a container bead that holds a body of work together. This section says when to file one, what shape it takes, and how the parent/child wiring actually works.
+
+### When to file an epic
+
+File `--type epic` when AT LEAST ONE of these is true:
+
+- The work spans **more than one specialist agent** (e.g. Atlas + Rex + GLaDOS).
+- The work spans **more than one session** (won't finish in a single afternoon).
+- The work has **3+ sub-tasks** you can already name.
+- The work has a **named outcome with a measurable success metric** distinct from any single task's acceptance criteria.
+
+If none are true, file as `task`. Epics are containers; over-using them creates ceremony without payoff.
+
+### Epic authoring shape
+
+An epic bead has a different shape from a task bead. Required fields:
+
+| Field | What goes in it |
+|-------|-----------------|
+| **Title** | The name of the initiative. Concrete, not aspirational. ✅ "Incluir Novas Features — autonomous Notion intake pipeline" ❌ "Refactor frontend" |
+| **Vision** | One paragraph: what the world looks like when this is done. Why we care. |
+| **Success metric** | A specific, observable signal that means the epic is done. Not a vibe. ✅ "≥3 end-to-end Notion→merged-PR cycles without operator intervention." |
+| **Owner** | One named agent. GLaDOS by default for project-brief epics; Wheatley when the epic is a research/scoping initiative. |
+| **`project:<name>` label** | Mandatory, same as any task. |
+| **Children list** | OPTIONAL at filing time. Can stay empty — children get filed as they emerge during scoping. |
+
+Do NOT backfill children at filing time unless you actually know them. An epic with imagined children is worse than an epic with no children — they rot fast.
+
+### Dependency wiring (CRITICAL — read carefully)
+
+The intuitive shape ("children are `blocked-by` the epic") is **wrong** — it creates a circular dep. The epic only closes when children close; children can't start until the epic closes; deadlock.
+
+The correct wiring:
+
+- **Children carry `--deps discovered-from:<epic-id>`** at filing time. Soft provenance link. Does NOT block work. Lets the graph render the parent/child relationship.
+- **The epic carries `--deps blocked-by:<child1>,<child2>,...`** — manually updated as children are filed. Auto-blocks the epic from closing while any member is still open.
+- Children remain freely claimable, freely workable, and close on their own PR-open events (same close-discipline as any task).
+
+Worked example:
+
+```bash
+# 1. File the epic, no children yet
+bd create "Incluir Novas Features — autonomous Notion intake pipeline" \
+  --type epic --priority 2 --label project:incluir \
+  --description "VISION: ..." \
+  --acceptance "≥3 end-to-end Notion→merged-PR cycles..." \
+  --json
+# → returns id: e.g. aperture-abcd
+
+# 2. File a child task during scoping
+bd create "Build Notion-API → BEADS sync worker" \
+  --type task --priority 1 --label project:incluir \
+  --deps discovered-from:aperture-abcd \
+  --json
+# → returns child id: e.g. aperture-efgh
+
+# 3. Update the epic to be blocked-by the new child
+bd update aperture-abcd --deps blocked-by:aperture-efgh
+```
+
+Alternative form using `bd dep add` (equivalent — same edge in graph):
+
+```bash
+bd dep add aperture-abcd blocked-by:aperture-efgh
+```
+
+### Ownership inside an epic
+
+The **epic owner** is responsible for the initiative's vision and shipping the success metric. They do NOT have to do all the child work themselves. Children get claimed by whichever specialist's lane fits — same claim-discipline as any other bead.
+
+Defaults:
+
+- **Project-brief epics** (operator-initiated big initiatives) → GLaDOS owns.
+- **Research/scoping epics** (figure out the shape of X before we build it) → Wheatley owns.
+- **Domain-specific epics** (e.g. a security hardening sweep) → the relevant specialist owns (Cipher in that example).
+
+### Closing an epic
+
+**Epics have no PR.** The PR-open close rule that governs work-bearing tasks (§4 below) does NOT apply to epics. Epics are containers; they don't ship code themselves.
+
+An epic closes when BOTH:
+
+1. Every blocking child is closed (BEADS's `blocked-by` machinery enforces this — `bd close` will reject otherwise).
+2. The epic's success metric is observable in the real world.
+
+If all children close but the success metric isn't met → epic stays open, owner files more children. If the success metric is met but children are still pending → owner reviews; usually the open children are stale or scope-changed and should be closed/superseded.
+
+The `close_reason` on an epic should reference the success-metric observation, not just enumerate the children:
+
+```
+close_task(
+  id: "aperture-abcd",
+  reason: "Notion intake pipeline shipped. Verified ≥3 end-to-end submissions reaching merged-PR with no operator step (entries notion://x, notion://y, notion://z). All blocking children closed."
+)
+```
+
+### Anti-patterns specific to epics
+
+| Don't | Why |
+|-------|-----|
+| File an epic for solo single-session work | Ceremony > value. Use a task. |
+| Backfill children you do not actually know yet | Imagined-children epics rot fast |
+| Use `blocks:<children>` from epic toward children | The deadlock-producing direction |
+| Use `blocked-by:<epic>` from child toward epic | Same — child can't start while epic open, epic only closes when child does |
+| Close an epic before its success metric is observable | Defeats having a measurable initiative |
+| Hold an epic open because of one stale child | Close or supersede the stale child first; don't pollute the parent's state |
+
+---
+
+## 4. The Lifecycle
 
 ```
 query_tasks()        → find what needs doing
@@ -250,7 +361,7 @@ After closing, send a short completion report. See `aperture:communicate` for st
 
 ---
 
-## 4. Anti-Patterns
+## 5. Anti-Patterns
 
 | Don't | Why |
 |-------|-----|
@@ -268,7 +379,7 @@ After closing, send a short completion report. See `aperture:communicate` for st
 
 ---
 
-## 5. Full Example Sequence
+## 6. Full Example Sequence
 
 ```
 # 1. Find work
@@ -301,7 +412,7 @@ send_message(to: "glados", message: "task-456 closed. Filter scoped down — nav
 
 ---
 
-## 6. Filing a New Task — Complete Example
+## 7. Filing a New Task — Complete Example
 
 ```bash
 bd create "Add rate-limit middleware to /api/otel/v1/traces" \
