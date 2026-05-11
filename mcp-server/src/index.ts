@@ -198,19 +198,22 @@ server.tool(
     id: z.string().describe("Task ID (e.g. bd-a1b2)"),
     claim: z.boolean().optional().describe("Claim this task for yourself"),
     status: z.string().optional().describe("New status"),
-    description: z.string().optional().describe("New description. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
-    notes: z.string().optional().describe("Append notes. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
+    description: z.string().optional().describe("New description (REPLACES existing description). NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
+    notes: z.string().optional().describe("Note to add to the task. APPENDS to existing notes by default (with newline separator) — your write does NOT replace anyone else's content. Pass replace_notes:true if you really want to overwrite (rare; cleanup/canonicalization only). NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
+    replace_notes: z.boolean().optional().describe("If true, the notes field is REPLACED with the new value (destructive). Default false (append). Use only for cleanup/canonicalization, never for routine progress updates."),
     assignee: z.string().optional().describe("Reassign the task to a different agent or user."),
     add_labels: z.array(z.string()).optional().describe("Labels to add. Useful when retroactively attaching a project:<name> label after a 3-arg create."),
     remove_labels: z.array(z.string()).optional().describe("Labels to remove."),
   },
-  async ({ id, claim, status, description, notes, assignee, add_labels, remove_labels }) => {
+  async ({ id, claim, status, description, notes, replace_notes, assignee, add_labels, remove_labels }) => {
     try {
       const flags: Record<string, string> = {};
       if (claim) flags["claim"] = "";
       if (status) flags["status"] = status;
       if (description) flags["description"] = description;
-      if (notes) flags["notes"] = notes;
+      // Default to append-notes so a write never silently destroys prior content
+      // (aperture-e8qp). Caller can opt into destructive overwrite via replace_notes.
+      if (notes) flags[replace_notes ? "notes" : "append-notes"] = notes;
       const result = await updateTask(id, flags, {
         assignee,
         addLabels: add_labels,
