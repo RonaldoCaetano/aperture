@@ -149,15 +149,41 @@ server.tool(
 
 server.tool(
   "create_task",
-  "Create a new BEADS task. Returns the task ID.",
+  "Create a new BEADS task. Returns the task ID. Optional fields cover the full filing flow in one call: type, labels (must include exactly one project:<name>), assignee, acceptance, blocked_by. If labels is omitted, no project label is added — caller is responsible for adding one separately.",
   {
     title: z.string().describe("Task title"),
     priority: z.number().min(0).max(4).describe("Priority 0-4 (0 = highest)"),
     description: z.string().optional().describe("Task description. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>`, `</description>` inside the text — the tool-argument wire format can misinterpret them as parameter terminators, causing argument truncation. If you must reference such tags, use `&lt;/reason&gt;` or paraphrase (e.g. \"the reason field\")."),
+    type: z.enum(["task", "bug", "feature", "chore", "epic"]).optional().describe("Task type. Defaults to 'task'."),
+    labels: z.array(z.string()).optional().describe("Labels to apply at creation. If provided, MUST contain exactly one `project:<name>` label (canonical: project:aperture, project:incluir, project:beads-galaxy, project:mempalace). If omitted, no labels are set — add the project label separately via update_task add_labels."),
+    assignee: z.string().optional().describe("Assignee (agent name: glados, wheatley, peppy, izzy, vance, rex, scout, cipher, sage, atlas, sterling — or any string). Set without a separate update call."),
+    acceptance: z.string().optional().describe("Testable acceptance criteria. NOTE: avoid literal XML/HTML close-tag patterns like `</acceptance>` inside the text; they can be misread as parameter terminators. Use `&lt;/...&gt;` or paraphrase."),
+    blocked_by: z.array(z.string()).optional().describe("Task IDs that block this one. Each is wired up via `bd dep add <new> <blocker>` after creation."),
   },
-  async ({ title, priority, description }) => {
+  async ({ title, priority, description, type, labels, assignee, acceptance, blocked_by }) => {
     try {
-      const result = await createTask(title, priority, description);
+      // Project-label validation: when labels are provided at all, exactly one
+      // project:<name> entry is required. Empty/omitted labels are allowed
+      // for backwards compatibility.
+      if (labels !== undefined) {
+        const projectLabels = labels.filter((l) => l.startsWith("project:"));
+        if (projectLabels.length !== 1) {
+          return {
+            content: [{
+              type: "text",
+              text: `ERROR: project label required: must include exactly one project:<name> label (got ${projectLabels.length}: ${JSON.stringify(projectLabels)}). Canonical taxonomy: project:aperture, project:incluir, project:beads-galaxy, project:mempalace.`,
+            }],
+            isError: true,
+          };
+        }
+      }
+      const result = await createTask(title, priority, description, {
+        type,
+        labels,
+        assignee,
+        acceptance,
+        blockedBy: blocked_by,
+      });
       return { content: [{ type: "text", text: result }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };
@@ -167,22 +193,29 @@ server.tool(
 
 server.tool(
   "update_task",
-  "Update a BEADS task. Use claim to assign to yourself.",
+  "Update a BEADS task. Use claim to assign to yourself. Supports reassigning (assignee) and label edits (add_labels / remove_labels) without shelling to bd.",
   {
     id: z.string().describe("Task ID (e.g. bd-a1b2)"),
     claim: z.boolean().optional().describe("Claim this task for yourself"),
     status: z.string().optional().describe("New status"),
     description: z.string().optional().describe("New description. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
     notes: z.string().optional().describe("Append notes. NOTE: avoid literal XML/HTML close-tag patterns like `</reason>`, `</notes>` inside the text — they can be misread as parameter terminators by the tool-argument wire format. Use `&lt;/...&gt;` or paraphrase."),
+    assignee: z.string().optional().describe("Reassign the task to a different agent or user."),
+    add_labels: z.array(z.string()).optional().describe("Labels to add. Useful when retroactively attaching a project:<name> label after a 3-arg create."),
+    remove_labels: z.array(z.string()).optional().describe("Labels to remove."),
   },
-  async ({ id, claim, status, description, notes }) => {
+  async ({ id, claim, status, description, notes, assignee, add_labels, remove_labels }) => {
     try {
       const flags: Record<string, string> = {};
       if (claim) flags["claim"] = "";
       if (status) flags["status"] = status;
       if (description) flags["description"] = description;
       if (notes) flags["notes"] = notes;
-      const result = await updateTask(id, flags);
+      const result = await updateTask(id, flags, {
+        assignee,
+        addLabels: add_labels,
+        removeLabels: remove_labels,
+      });
       return { content: [{ type: "text", text: result }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `ERROR: ${e.message}` }], isError: true };

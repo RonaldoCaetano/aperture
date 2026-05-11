@@ -30,25 +30,122 @@ export function runBd(args: string[]): Promise<string> {
   });
 }
 
+export type TaskType = "task" | "bug" | "feature" | "chore" | "epic";
+
+export interface CreateTaskOptions {
+  type?: TaskType;
+  labels?: string[];
+  assignee?: string;
+  acceptance?: string;
+  blockedBy?: string[];
+}
+
+/**
+ * Parse `bd create --json` output and return the new task's id.
+ * `bd create` emits a single JSON object; in some configurations it can emit
+ * a multi-line wrapper. Be tolerant.
+ */
+function extractTaskId(raw: string): string | undefined {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      if (typeof (parsed as Record<string, unknown>).id === "string") {
+        return (parsed as Record<string, string>).id;
+      }
+      // Some bd versions wrap the new task under .issue or .task
+      const wrapped = (parsed as Record<string, unknown>).issue ?? (parsed as Record<string, unknown>).task;
+      if (wrapped && typeof wrapped === "object" && typeof (wrapped as Record<string, unknown>).id === "string") {
+        return (wrapped as Record<string, string>).id;
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return undefined;
+}
+
 export async function createTask(
   title: string,
   priority: number,
   description?: string,
+  options?: CreateTaskOptions,
 ): Promise<string> {
   const args = ["create", title, "-p", String(priority), "--json"];
   if (description) {
     args.push("-d", description);
   }
-  return runBd(args);
+  if (options?.type) {
+    args.push("--type", options.type);
+  }
+  if (options?.labels && options.labels.length > 0) {
+    // bd accepts -l with a comma-separated list
+    args.push("-l", options.labels.join(","));
+  }
+  if (options?.assignee) {
+    args.push("--assignee", options.assignee);
+  }
+  if (options?.acceptance) {
+    args.push("--acceptance", options.acceptance);
+  }
+
+  const result = await runBd(args);
+
+  // Add blocked_by dependencies after creation. We need the new task id.
+  const blockedBy = options?.blockedBy ?? [];
+  if (blockedBy.length > 0) {
+    const newId = extractTaskId(result);
+    if (newId) {
+      for (const blockerId of blockedBy) {
+        try {
+          await runBd(["dep", "add", newId, blockerId]);
+        } catch (e: any) {
+          // Surface the error but keep the task: the agent can retry the dep
+          // separately rather than have the whole call fail.
+          throw new Error(
+            `Task ${newId} created but failed to add dependency on ${blockerId}: ${e.message}`,
+          );
+        }
+      }
+    } else {
+      throw new Error(
+        "Task created but could not parse new task ID from bd output to attach blocked_by dependencies.",
+      );
+    }
+  }
+
+  return result;
 }
 
-export async function updateTask(id: string, flags: Record<string, string>): Promise<string> {
+export interface UpdateTaskOptions {
+  assignee?: string;
+  addLabels?: string[];
+  removeLabels?: string[];
+}
+
+export async function updateTask(
+  id: string,
+  flags: Record<string, string>,
+  options?: UpdateTaskOptions,
+): Promise<string> {
   const args = ["update", id];
   for (const [key, value] of Object.entries(flags)) {
     if (value === "") {
       args.push(`--${key}`);
     } else {
       args.push(`--${key}`, value);
+    }
+  }
+  if (options?.assignee) {
+    args.push("--assignee", options.assignee);
+  }
+  if (options?.addLabels && options.addLabels.length > 0) {
+    for (const lbl of options.addLabels) {
+      args.push("--add-label", lbl);
+    }
+  }
+  if (options?.removeLabels && options.removeLabels.length > 0) {
+    for (const lbl of options.removeLabels) {
+      args.push("--remove-label", lbl);
     }
   }
   args.push("--json");
