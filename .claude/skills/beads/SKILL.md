@@ -98,6 +98,7 @@ Use `blocked-by` aggressively. `bd ready` only shows tasks with no open blockers
 | `project:incluir` | Programa Incluir (`monorepo-incluir`, BH Escape, customer sites) |
 | `project:beads-galaxy` | BEADS upstream tooling, dolt sync, conventions |
 | `project:mempalace` | The agent memory palace — drawers, tunnels, knowledge graph |
+| `project:frame` | Frame — AI-native TypeScript SDK skeleton (`github.com/FranciscoMateusVG/frame`) |
 
 If a task doesn't fit one of these, **stop and ask the operator before inventing a new label.** The taxonomy is small on purpose.
 
