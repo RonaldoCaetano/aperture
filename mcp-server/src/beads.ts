@@ -268,8 +268,11 @@ export async function storeArtifact(
   type: string,
   value: string,
 ): Promise<string> {
+  // Artifacts have no first-class home in bd today, so we append a tagged
+  // line to the notes log. Use --append-notes (not --notes) so we don't
+  // clobber existing notes content — that was the aperture-e8qp footgun.
   const artifactLine = `artifact:${type}:${value}`;
-  return runBd(["update", taskId, "--notes", artifactLine, "--json"]);
+  return runBd(["update", taskId, "--append-notes", artifactLine, "--json"]);
 }
 
 export async function searchTasks(

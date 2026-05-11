@@ -287,19 +287,13 @@ update_task(
 
 You don't need to update every 5 minutes. Update when something changes.
 
-### ⚠️ The `notes` field REPLACES — it does NOT append
+### `notes` appends by default
 
-Despite the schema description saying "Append notes," the BEADS server **overwrites the entire `notes` field on every `update_task` call.** Writing a new note silently erases anything that was there before.
+`update_task(id, notes: X)` APPENDS X to the existing notes with a newline separator. Your write does not replace anyone else's content. Multiple agents writing notes to the same bead accumulate correctly. Same goes for `store_artifact` — the artifact line is appended to notes, not clobbered over previous content.
 
-**Always read-modify-write** when adding to existing notes:
+If you genuinely want to REPLACE the notes field (cleanup, canonicalization, rare), pass `replace_notes: true` explicitly. This is destructive — use it deliberately.
 
-```
-existing = query_tasks(mode: "show", id: "task-123")[0].notes ?? ""
-combined = existing + "\n\n---\n\n## New section\n" + your_new_content
-update_task(id: "task-123", notes: combined)
-```
-
-If you skip the read step, you will silently destroy other agents' work. Bites hardest in collaborative tasks. For purely standalone progress notes that don't need to preserve history, replace is fine — but be deliberate about that choice.
+(Fixed in aperture-e8qp. Earlier sessions document the old replace-by-default behaviour and the read-modify-write workaround — that workaround is no longer needed.)
 
 ### Storing artifacts
 
@@ -371,7 +365,7 @@ After closing, send a short completion report. See `aperture:communicate` for st
 | Write "TODO" or "fix" as a title | Future-you won't know what it meant |
 | Skip the description | "Why" context is lost the moment you stop typing |
 | Skip acceptance criteria | "Done" becomes a vibe, not a check |
-| Update notes without read-modify-write | Silently destroys other agents' notes |
+| Pass `replace_notes: true` for routine progress updates | Destructive — clobbers prior agents' notes. Reserve for cleanup/canonicalization only |
 | Close with `reason: "done"` | Useless to anyone reading later |
 | Hold a task open until PR is merged | Closes when PR opens. Merge happens whenever CI + reviewers allow |
 | Embed literal `</tag>` in a text field | Truncates the call, breaks the next one |
