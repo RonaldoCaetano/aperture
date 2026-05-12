@@ -342,13 +342,34 @@ close_task(
 
 The `reason` should be a sentence or two summarising what was actually done — not "done" or "completed". Future agents may read this.
 
-### ⚠️ Tool-argument escaping in `reason` (and other text fields)
+### 🚨 Tool-argument escaping in `reason` (and other text fields) — DO NOT SKIP
+
+**This footgun has bitten multiple agents and subagents in a single day.** Read it before you write a close_reason that paraphrases or quotes a previous turn.
 
 Free-form text fields (`close_task(reason)`, `update_task(notes/description)`, `create_task(description)`, `store_artifact(value)`, `send_message(message)`) carry prose over a wire format that uses `<param-like>...</param-like>` delimiters.
 
-**Literal close-tag patterns like `</reason>`, `</notes>`, `</description>`, `</message>` inside the value can be misread as parameter terminators** — your call gets silently truncated and the leftover text bleeds into the *next* tool call you make.
+**Literal close-tag patterns like `</reason>`, `</notes>`, `</description>`, `</message>` inside the value are misread as parameter terminators.** Your call gets silently truncated at the close-tag, the rest of the value drops, AND the leftover text bleeds into the **next** tool call you make. Both ends of the failure are silent — your bead has half the close_reason, and a downstream tool call has corrupted args. You will not see an error.
 
-**The rule:** never write a literal `</xxx>` close-tag pattern in those text fields. Escape it (`&lt;/xxx&gt;`) or paraphrase ("the reason field" rather than "</reason>"). Plain prose with no XML/HTML markup is always safe.
+**The pattern that bites** — agents talking about their own tools:
+```
+close_reason: "Closed because </reason> field was wrong, recovered by..."
+                              ^^^^^^^^^^^
+                              truncates HERE; "field was wrong, recovered by..." silently joins
+                              the next outgoing tool call's parameter block
+```
+
+**Real precedent (2026-05-12):**
+- Peppy's `aperture-z5ow` subagent: close_reason quoted "the `</reason>` field" → bead record has the truncated close-reason + a `</reason>` close-tag bleed visible in the persisted record.
+- Multiple GLaDOS sessions: descriptions that documented THIS skill's warning by quoting the close-tag pattern produced the very bug they were warning about.
+
+**The rule — three safe alternatives:**
+1. **Paraphrase**: write "the reason field" instead of `</reason>`.
+2. **Escape HTML**: `&lt;/reason&gt;`.
+3. **Add a zero-width break**: `</​reason>` (U+200B between `</` and `reason>`) — for when verbatim accuracy matters.
+
+**When in doubt:** before any `close_task` / `update_task` / `create_task` / `store_artifact` / `send_message` call whose body discusses BEADS tool calls or XML/HTML, scan the prose for `</`. If you see it, fix it first.
+
+Plain prose with no `</xxx>` patterns is always safe.
 
 ### Reporting
 

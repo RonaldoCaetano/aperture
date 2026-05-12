@@ -173,3 +173,31 @@ Three agents run concurrently. Three reports come back. Now you have the recon y
 | Asking a subagent to make architectural decisions | Decisions need your context — keep synthesis, delegate execution |
 | Using `Explore` for tasks that need writes | `Explore` is read-only; the subagent will fail or stall |
 | Forgetting to verify the diff after a code-writing subagent | Trust but verify — the summary may not match the actual changes |
+| Running `ssh xerox` / `ssh mini` / slow log pulls in-context | A hung external I/O call burns your context tokens and freezes your responsiveness — even when no parallelism is needed, a subagent is a fault-isolation boundary. See §11. |
+
+---
+
+## 11. Fault Isolation — Subagents as Blast-Radius Boundaries
+
+The case for delegating is not only parallelism. **A subagent is a separate context window.** If something hangs inside it, the hang stays inside it. Your main session keeps running.
+
+This matters when the work involves **potentially-blocking external I/O**:
+
+| In-context (your hands) | Subagent (fault-isolated) |
+|---|---|
+| `gh pr view 206 --json` (fast, bounded) | `ssh xerox "..."` (Tailscale auth can prompt; SSH can hang on slow DNS) |
+| `bd list` / `bd show` (local sqlite, ms) | `gh run view <run-id> --log-failed` (can be a multi-MB stream) |
+| `git status`, `git log -5` | Anything that polls (deploy waits, `kubectl wait`, retry loops) |
+| Read tool on a known file | Slow DB aggregates over large tables |
+| Single Edit/Write tool call | Repeated cross-host probes (multi-`ssh` audits) |
+
+**Real precedent from Aperture sessions:**
+
+- **Tailscale re-auth episode (2026-05-12):** an `ssh xerox` call hung waiting for re-auth. ~20 minutes of context tokens burned on "what's happening" thinking while the call quietly sat there. A subagent doing the same call would have hung in isolation; the main session would have remained responsive and able to route around it.
+- **Peppy's `aperture-h8mm` (2026-05-12):** the subagent dispatched for the leak-sweep fix stalled at the 600s watchdog and never created its worktree. The fault was localised — Peppy himself took over and shipped in 12 min. Net cost of the subagent failure: zero context-token impact on Peppy.
+
+**The rule:** if a bash command could plausibly block, hang, or take longer than ~30 seconds to settle, route it through a subagent — *even if there's no parallelism benefit*. Worst case the subagent hangs and you kill it. Best case you stay responsive while it does the slow work.
+
+**Watch the hidden tells:** you're about to type `ssh`, `gh ... --log`, `gh run view ... --log-failed`, `curl https://<long-URL>`, `kubectl wait`, `pg_dump`, `docker exec ... psql -c "<aggregate>"`. Pause. Subagent it.
+
+**This is not a contradiction with §8 "don't delegate tiny tasks."** Tiny != fast. A one-line ssh call is small in code but unbounded in time. Time-unboundedness is the trigger for fault isolation, not code size.
