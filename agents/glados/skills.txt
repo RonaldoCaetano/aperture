@@ -4,3 +4,4 @@ beads
 deploy-workflow
 subagents
 worktree-discipline
+watch-protocol
