@@ -5,3 +5,4 @@ deploy-workflow
 subagents
 worktree-discipline
 watch-protocol
+specialist-delegation

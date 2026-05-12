@@ -2,3 +2,4 @@ communicate
 team
 beads
 worktree-discipline
+specialist-delegation

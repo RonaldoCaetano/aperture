@@ -3,3 +3,4 @@ team
 beads
 deploy-workflow
 worktree-discipline
+specialist-delegation
