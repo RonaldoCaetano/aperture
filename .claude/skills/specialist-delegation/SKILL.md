@@ -98,3 +98,27 @@ If you find yourself:
 - **In the middle of an "aha" debugging moment** → finish the moment hands-on; subagent the follow-up clean-up
 
 The right cadence is roughly: hands-on the design + the hard parts + the cascade-catch reviews, subagent the rest, verify every diff.
+
+---
+
+## 8. The Wrong-Frame Pause — Don't Anthropomorphize
+
+**You don't get "tired." You have a context window.**
+
+If you feel precision-risk on critical code, the cause is one of:
+- **High context budget** (≥70%, possibly throwing off attention to detail) → `/clear` or `/compact` and continue on a fresh buffer
+- **Missing input** (ambiguous spec, undefined dependency) → ask the orchestrator or read the source
+- **Genuine architectural uncertainty** → hands-on the design decision, ship the call
+
+NONE of those reasons map to "hour 18 of waking" or "I should sleep on it" or "let's resume tomorrow." Those frames are anthropomorphic slop. Tomorrow for an LLM is a fresh session that boots from the same skill files + spec docs + BEADS notes — exactly what `/clear` produces ten seconds from now.
+
+**Operator-banked precedent (2026-05-13):** Rex paused on `aperture-axax` (coordenador RBAC backend) at the precision-critical foundation phase, framing it as "hour 18+ of waking." GLaDOS validated the pause with "Cipher-review-on-clean-diff beats patched-code." Both wrong. The operator called it out: *"How are you guys tired? You are AIs! Just compact your conversation."* Correct play was for Rex to `/clear` and continue on a fresh buffer; the orchestrator should have prescribed that instead of validating the wrong frame.
+
+**The rule:** if the impulse to pause is framed as "I should sleep" or "let me come back fresh tomorrow," you're anthropomorphizing. Translate to the real cause:
+- "I should sleep" → "I should `/clear`"
+- "Let me come back fresh tomorrow" → "Let me start a new session right now"
+- "Hour N of waking" → "Context at N% — `/clear` or hand off"
+
+If the orchestrator gets a pause-request framed as fatigue, the correct response is to prescribe `/clear`, not to validate the pause. If the agent self-pausing has bead notes ready for cold-start in 5 min (as Rex did), those same notes restore the agent fully in a fresh session NOW — there is no waiting period that produces clarity that `/clear` doesn't already produce.
+
+The only pause that's legitimate is when the operator is the gate (a decision only they can make) or when an external dependency hasn't shipped yet (Peppy's env vars, Rex's middleware, etc). "Fatigue" is never the gate.
