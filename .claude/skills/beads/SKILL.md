@@ -342,6 +342,30 @@ close_task(
 
 The `reason` should be a sentence or two summarising what was actually done — not "done" or "completed". Future agents may read this.
 
+#### Edge case — auto-closed PRs (stacked-PR pattern on monorepo-incluir)
+
+If your PR gets **CLOSED** by GitHub (not MERGED) before any merge happened, the BEADS task is **NOT** done. The close-on-PR-open invariant is about *your PR being open and ready for review* — it doesn't apply to a PR GitHub auto-killed.
+
+The most common cause is the stacked-PR auto-close pattern: your PR was opened with `--base <parent-branch>`, the parent merged via the auto-merge workflow which uses `--delete-branch`, and 1-3 seconds later GitHub auto-closed your PR because its base branch no longer exists. Recovery via `gh pr edit --base main` and `gh pr reopen` is blocked by GitHub (chicken-and-egg deadlock).
+
+Recovery procedure: follow `aperture:incluir-deploy` Gotcha #9 — rebase onto `origin/main`, force-push, open a **fresh PR** targeting `main`, leave a cross-link comment on the closed predecessor.
+
+**Then update your BEADS artifact** to point at the NEW PR URL:
+
+```
+store_artifact(
+  task_id: "task-123",
+  type: "pr",
+  value: "https://github.com/.../pull/<new-num>"
+)
+```
+
+The original artifact entry pointing at the auto-closed PR stays in the notes (BEADS artifacts append, they don't replace), so the historical trail is intact. But the canonical "what shipped" is the new PR, and that's what should be at the top of the artifact list.
+
+The bead itself stays **closed** under the close-on-PR-open invariant — but it must point at the WORKING PR, not the auto-closed predecessor. If you re-claimed the bead to recover, close it again once the new PR opens, citing the recovery in the close reason.
+
+Precedents (2026-05-14): PR #237→#245 (Vance, aperture-abfs), PR #242→#244 (Rex, aperture-q2we).
+
 ### 🚨 Tool-argument escaping in `reason` (and other text fields) — DO NOT SKIP
 
 **This footgun has bitten multiple agents and subagents in a single day.** Read it before you write a close_reason that paraphrases or quotes a previous turn.

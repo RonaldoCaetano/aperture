@@ -114,3 +114,25 @@ This skill is written for `monorepo-incluir`. The same pattern applies if you're
 ```
 
 Aperture itself, beads-galaxy, mempalace — same rule, same hygiene.
+
+---
+
+## 8. Stacked PRs — when your worktree's branch depends on another open PR
+
+Sometimes your work genuinely depends on a parent PR that hasn't merged yet (e.g. Vance's frontend digest UI needs Rex's backend digest column to land first). When that happens, you might be tempted to open your PR with `--base <parent-branch>` instead of `--base main`. **Don't, unless you understand the auto-close failure mode.**
+
+When the parent merges via the auto-merge workflow on `monorepo-incluir`, `gh pr merge --squash --delete-branch` deletes the parent's head branch. Three seconds later, GitHub auto-closes your dependent PR because its base no longer exists. Your code stays on the worktree's branch (nothing's lost from disk), but the PR ceremony evaporates and recovery requires opening a fresh PR — `gh pr edit --base main` and `gh pr reopen` both fail in that order.
+
+**Prevention:** prefer `--base main` for your PR. If your work doesn't typecheck or test against current main, reconsider whether you should be opening the PR yet — wait until the parent merges, then rebase onto fresh main and open.
+
+**If you genuinely must stack:** retarget to main as soon as the parent's CI is green and merge is imminent, BEFORE the parent merges:
+
+```bash
+git fetch origin && git rebase origin/main
+git push --force-with-lease origin <your-branch>
+gh pr edit <your-pr-num> --base main
+```
+
+**Recovery procedure (after auto-close):** see `aperture:incluir-deploy` Gotcha #9 for the full fresh-PR + cross-link-comment procedure. Banked precedents: PR #237→#245 (Vance, 2026-05-14), PR #242→#244 (Rex, 2026-05-14).
+
+Worktree itself stays alive through the recovery — same branch, same files. You're only re-opening the GitHub PR surface, not the local work.
