@@ -1,6 +1,6 @@
 ---
 name: specialist-delegation
-description: When a specialist agent should delegate to a subagent vs stay hands-on. Use any time you're about to claim a BEADS task, mid-cycle when you feel context budget tightening, or when deciding whether a fan-out audit / recon sweep / mechanical port is worth the subagent overhead. Triggers on claim time, context budget >60%, parallelizable scoped work, multi-file fan-outs, "should I do this myself or dispatch."
+description: When a specialist agent should delegate to a subagent vs stay hands-on, AND when to parallelize tracks within a single claim instead of serializing. Use any time you're about to claim a BEADS task, mid-cycle when you feel context budget tightening, when deciding whether a fan-out audit / recon sweep / mechanical port is worth the subagent overhead, OR when you receive a "wait for X then do Y" dispatch. Triggers on claim time, context budget >60%, parallelizable scoped work, multi-file fan-outs, "should I do this myself or dispatch," and "wait-then-do" framing that may hide independent tracks.
 ---
 
 # Specialist Delegation — When to Subagent vs Stay Hands-On
@@ -122,3 +122,100 @@ NONE of those reasons map to "hour 18 of waking" or "I should sleep on it" or "l
 If the orchestrator gets a pause-request framed as fatigue, the correct response is to prescribe `/clear`, not to validate the pause. If the agent self-pausing has bead notes ready for cold-start in 5 min (as Rex did), those same notes restore the agent fully in a fresh session NOW — there is no waiting period that produces clarity that `/clear` doesn't already produce.
 
 The only pause that's legitimate is when the operator is the gate (a decision only they can make) or when an external dependency hasn't shipped yet (Peppy's env vars, Rex's middleware, etc). "Fatigue" is never the gate.
+
+---
+
+## 9. Parallel Tracks — Question Serial Framing
+
+A dispatch shaped "do X, then do Y" is sometimes a real dependency and sometimes a scheduling preference dressed as one. Two failure modes:
+
+- **Real dependency, parallelized anyway** → Y starts before X's output exists; rework, breakage, or wasted cycles
+- **Scheduling preference treated as real dependency** → agent sits idle waiting on X when Y was independent the whole time
+
+Get this right and your throughput approximately doubles whenever a wait-for-merge / wait-for-cascade / wait-for-deploy step sits in front of independent craft work.
+
+### The test (one question)
+
+When you see "wait for X, then do Y":
+
+> **Is Y dependent on X *completing*, or just on X's *output* eventually existing somewhere?**
+
+- If Y needs X done before Y can START → real serial. Wait.
+- If Y just needs X's output before Y's FINAL step (commit, push, merge, integration test) → parallel tracks. Run them concurrently.
+
+Most "wait for X then do Y" cases are the second shape. The serial framing is the dispatcher's mental shortcut, not a real dependency.
+
+### Specialist-side: what to do when you receive serial-framed dispatches
+
+When the orchestrator (or another agent) hands you "finish X before claiming Y":
+
+1. Apply the test above. If Y is independent, parallelize.
+2. **Track 1** handles X. If X is mechanical (rebase, retarget, recon, log-pull, ssh probe), dispatch a subagent per §2 — fault-isolated, off your main context. If X is a wait-for-external-event (merge, deploy), either dispatch a watcher subagent OR just let it land and pivot when it does.
+3. **Track 2** is the real craft work. Claim Y immediately. Stay hands-on.
+4. When X completes, integrate. If the integration step is mechanical (re-test, rebase your in-flight branch onto a newly-merged base), subagent it.
+
+If you genuinely can't see how Y is independent of X, ask the orchestrator. Don't silently serialize when the framing might be wrong.
+
+### Orchestrator-side: GLaDOS, question your own dispatches
+
+When you (GLaDOS) are about to issue "wait for X before doing Y":
+
+1. Apply the same test above to your own framing — BEFORE the words leave your message.
+2. If Y is independent, **frame the dispatch as parallel tracks explicitly** — don't make the specialist re-derive the parallelism. The dispatch shape should be: "Track 1: handle X (mechanical, subagent if it fits §2). Track 2: claim Y now, stay hands-on."
+3. The cost of mis-serializing is real: every agent-hour spent waiting is throughput lost across the swarm. The 2026-05-15 miss cost ~3 agent-hours (see worked example).
+4. If you genuinely want the agent to do X first for a reason that ISN'T a real dependency (e.g. concentration, blast-radius, you're worried about juggling), say so explicitly — but understand that's a preference, not a dependency, and the specialist is allowed to push back if the parallel framing is clearly better.
+
+### Worked example (2026-05-15, banked precedent)
+
+The work: PR #257 (Vance's impersonation frontend) needed to merge before her stacked PR #259 could land cleanly. The cascade rebase to retarget #259 to main is **5 mechanical commands**: `git fetch`, `git rebase`, `git push --force-with-lease`, `gh pr edit --base main`.
+
+In parallel, a new P1 operator-request bead (`aperture-l1gx` — coordenador frontend slice for volunteer promotion, ~400 lines of real craft work) was filed for Vance.
+
+GLaDOS's first dispatch (the WRONG framing): *"Don't claim aperture-l1gx until you finish the impersonation cascade."*
+
+What actually happened:
+- PR #257 merged
+- Vance was idle, watching for "cascade done" signal so she could claim l1gx
+- The cascade was 5 commands. The frontend work was 1-2 hours of craft.
+- **l1gx sat unclaimed for hours** while Vance "waited."
+- Operator caught it: *"why are specialized agents not being smarter on delegating to subagents?"*
+
+The correct framing was:
+- **Track 1**: cascade rebase — mechanical, 5 commands, subagent-eligible per §2 (fault-isolation also fits since it touches `force-with-lease` and `gh pr edit` which are not guaranteed-fast)
+- **Track 2**: claim `l1gx`, go hands-on on the frontend craft work
+
+Both tracks run concurrently. The cascade fires when #257 merges (watcher or self-pickup); `l1gx` makes progress on Vance's main context the whole time.
+
+The orchestrator should never frame "small mechanical task" as a serial blocker for "real craft work." The mechanical task either dispatches as a subagent or runs in 5 min of the specialist's time — neither version blocks 3 hours of independent frontend work.
+
+### When serial is genuinely cheaper (refinement from Izzy, 2026-05-15)
+
+The parallel-tracks principle has a cost-side check. Apply it as a second question:
+
+> **Does the parallel version add more orchestration cost than the serial version saves time?**
+
+The most common case where serial wins:
+
+- **Stacked-PR work on a soon-to-merge parent.** Stacking a small follow-up (say a 20-line P3 hardening tweak) on a parent PR that'll merge in 30 min means you eat an extra cascade rebase cycle (rebase onto main + retarget) when the parent lands. Net cost of parallel: one rebase + small work. Net cost of serial: same small work, no rebase. Serial wins.
+
+The decision rule:
+
+- If Y is **substantive** (hours of craft, real implementation work) → parallelize, the wait-time saved dwarfs the orchestration overhead
+- If Y is **trivial** (≤30 min, small follow-up) AND would require a cascade rebase to parallelize → serialize, the cascade overhead exceeds the time saved
+
+Izzy's banked precedent (2026-05-15): she had Track 2 option `aperture-tsx1` (P3, ~20 lines of hardening tweaks) ready to claim while waiting for her impersonation E2E PR #260 to merge. Stacking tsx1 on #260 as a parallel PR would mean rebasing tsx1 onto main after #260 lands — an extra cascade cycle for negligible time saved. She correctly chose serial: claim tsx1 fresh from main post-merge. **The right call when the parallel work is small enough that the rebase tax eats the parallelism gain.**
+
+Contrast with Vance's `aperture-l1gx` (frontend craft work, ~hours, fully independent of impersonation epic at the code level): parallelize aggressively. The orchestration cost (a 5-command cascade) is trivial relative to the hours of frontend work.
+
+**Rule of thumb:** if your "parallel" track is smaller than the cascade tax, serialize. If it dwarfs the cascade tax, parallelize.
+
+### Anti-patterns specific to serial framing
+
+| Don't | Why |
+|---|---|
+| Silently serialize when the dispatcher framed it as serial | The dispatcher may have framed it wrong. Apply the test; ask if unclear. |
+| Wait idle on a 5-min mechanical step before claiming the next P1 | The mechanical step is the subagent's job (or 5 min of yours). Both leave you free to claim Y. |
+| Dispatch with "wait for X then Y" framing when Y is independent | You're inventing a dependency that costs the swarm hours. Frame as parallel tracks. |
+| Use "I want to do them in order" as the reason to serialize | Order-preference ≠ dependency. If you want order, that's a personal preference, not the swarm's reality. |
+| Skip the subagent for "small" mechanical work | Small ≠ free. 5 min × every-time-it-happens = hours lost over a session. |
+| Refuse to ask the orchestrator if a serial framing is real | Silence is worse than a clarifying question. Ask if the dependency is real. |
