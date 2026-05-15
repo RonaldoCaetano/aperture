@@ -203,6 +203,19 @@ For each phantom route, exactly one of:
 
 **Never** silently ignore an entry. Each gap is a feature that doesn't work; pick the disposition that matches reality.
 
+### When the same business flow surfaces phantom in N apps — canonicalize, don't parallel-fix
+
+When an audit surfaces the **same business flow** (e.g., "transfer a student between classes") with **different phantom paths in different apps** — e.g., `apps/frontend` callers use `POST /api/students/transfer` and `apps/secretaria` callers use `PATCH /api/students/:id` with `{ classId }` body — the disposition isn't "fix each app's URL independently." It's **N+1 work items: build/canonicalize the one true endpoint, then update each app's caller to use it.**
+
+Two parallel fixes lock the swarm into two slightly-different "transfer student" implementations forever. Each gets its own backend route, each accumulates its own divergent edge-case handling, each becomes the surface a future bug lands on. The repo ends up with `POST /api/students/transfer` AND `PATCH /api/students/:id` AND a bulk-transfer endpoint added by someone who didn't notice the first two — three implementations of the same user-visible behaviour, none authoritative.
+
+The audit catches this pattern when classifying RED phantoms. Look for:
+- Multiple RED entries that semantically describe the same operation (same nouns + verbs + intent)
+- Different URL shapes across the apps (path-param vs query-param vs body-keyed)
+- Same payload field set (modulo naming) on each phantom request
+
+When you spot this in the audit table, file ONE coordination bead — "design the canonical endpoint; update both/all callers to use it" — not N independent bug beads. The audit's job is to surface this clearly enough that the implementer can't accidentally pick the parallel-fix path. Real precedent: aperture-tpxu surfaced `POST /api/students/transfer` phantom (apps/frontend); aperture-vdw2 surfaced `PATCH /api/students/:id` phantom (apps/secretaria) — same business flow, two phantom paths, filed as aperture-8twp + aperture-xezc with cross-references in both bead bodies pointing at each other so Rex catches the coordination requirement before he picks up either ticket.
+
 ---
 
 ## 5. Code Review Checklist
